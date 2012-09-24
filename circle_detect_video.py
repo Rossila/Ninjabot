@@ -1,4 +1,5 @@
-import cv
+import cv2.cv as cv
+import cv2
 import sys
 import numpy as np
 
@@ -14,7 +15,7 @@ def colorFilter(img, color):
     cv.CvtColor(img, imgHSV, cv.CV_BGR2HSV)
 
     if color == "yellow":
-        minColor = cv.Scalar(20, 100, 100)
+        minColor = cv.Scalar(20, 70, 70)
         maxColor = cv.Scalar(30, 255, 255)
     elif color == "blue":
         minColor = cv.Scalar(100,100,100)
