@@ -85,7 +85,7 @@ def find_closest_ball(balls, bot_loc):
 	shortest_dist = distance_between_points(balls[0], bot_loc)
 	for index, ball in enumerate(balls):
 		dist = distance_between_points(ball, bot_loc)
-		print "distance index: ", index, "distance: ", dist
+		#print "distance index: ", index, "distance: ", dist
 		if dist < shortest_dist:
 			shortest_dist = dist
 			min_index = index
@@ -98,14 +98,16 @@ def intersect(ln1_start, ln1_end, ln2_start, ln2_end):
 	def ccw(A,B,C): # returns true if ABC are in ccw order, false otherwise
 		return (C[1]-A[1])*(B[0]-A[0]) > (B[1]-A[1])*(C[0]-A[0])
 	
-	return ccw(ln1_start,ln2_start,ln2_end) == ccw(ln1_end,ln2_start,ln2_end) or \
-		ccw(ln1_start,ln1_end,ln2_start) == ccw(ln1_start,ln1_end,ln2_end)
+	return ccw(ln1_start,ln2_start,ln2_end) != ccw(ln1_end,ln2_start,ln2_end) and \
+		ccw(ln1_start,ln1_end,ln2_start) != ccw(ln1_start,ln1_end,ln2_end)
 
-def checkIntersections(bot_loc, bot_dest, obstacles):
+def checkIntersections(bot_loc, bot_dest, obstacles, intersections):
 	# find the slope of the robot's current tragectory
 	def getSlope(bot_loc, bot_dest):
+		if bot_dest[0] - bot_loc[0] == 0 or bot_dest[1] - bot_loc[1] == 0:
+			return None
 		slope = fractions.Fraction(bot_dest[1] - bot_loc[1],bot_dest[0] - bot_loc[0])
-		#print slope
+		print "the slope is: ", slope
 		return slope
 
 	def findConstant(slope, distance):
@@ -121,8 +123,10 @@ def checkIntersections(bot_loc, bot_dest, obstacles):
 	def getParallelLine(ln1_start, ln1_end, distance, dir):
 		ln2_start = (0,0)
 		ln2_end = (0,0)
-
-		perpSlope = -1/(getSlope(bot_loc, bot_dest))
+		slope = getSlope(bot_loc, bot_dest)
+		if slope == None:
+			return None
+		perpSlope = -1/slope
 		#print perpSlope
 
 		a = findConstant(perpSlope, distance)
@@ -134,30 +138,36 @@ def checkIntersections(bot_loc, bot_dest, obstacles):
 
 		return ln2_start, ln2_end
 
-	def checkObstacles(bot_loc, bot_dest, obstacles):
-		perpSlope = -1/(getSlope(bot_loc, bot_dest))
-		intersections = []
+	def checkObstacles(bot_loc, bot_dest, obstacles, intersections):
+		slope = getSlope(bot_loc, bot_dest)
+		if slope == None:
+			return intersections
+		perpSlope = -1/slope
 		
 		ln2_start_top, ln2_end_top = getParallelLine(bot_loc, bot_dest, 50, "top")
 		ln2_start_bot, ln2_end_bot = getParallelLine(bot_loc, bot_dest, 50, "bottom")
 		
-		draw_line(ln2_start_top, ln2_end_top, d_red)
-		draw_line(ln2_start_bot, ln2_end_bot, d_red)
-
+		#draw_line(ln2_start_top, ln2_end_top, d_red)
+		#draw_line(ln2_start_bot, ln2_end_bot, d_red)
 		a = findConstant(perpSlope, obstacle_radius + rover_width)
 		for obstacle in obstacles:
-			obs_proj1 = (obstacle[0] + int(a*perpSlope.denominator), obstacle[1] + int(a*perpSlope.numerator))
-			obs_proj2 = (obstacle[0] + int(-1*a*perpSlope.denominator), obstacle[1] + int(-1*a*perpSlope.numerator))
+			obs_proj1 = (int(obstacle[0] + a*perpSlope.denominator), int(obstacle[1] + a*perpSlope.numerator))
+			obs_proj2 = (int(obstacle[0] + -1*a*perpSlope.denominator), int(obstacle[1] + -1*a*perpSlope.numerator))
 			draw_line(obs_proj1, obs_proj2, d_blue)
-
-			if not intersect(bot_loc, bot_dest, obs_proj1, obs_proj2):
-				intersections.append((obs_proj1, obs_proj2))
-		print intersections
+			print "obstacle", obstacle
+			print "obs_proj1", obs_proj1
+			if intersect(bot_loc, bot_dest, obs_proj1, obstacle):
+				print "intersection found at", obs_proj1
+				intersections.append(obs_proj1)
+			elif intersect(bot_loc, bot_dest, obs_proj2, obstacle):
+				print "intersection found at", obs_proj2
+				intersections.append(obs_proj2)
+		#print intersections
 		return intersections
 
 
 	
-	return checkObstacles(bot_loc, bot_dest, obstacles)
+	return checkObstacles(bot_loc, bot_dest, obstacles, intersections)
 
 
 
@@ -177,24 +187,28 @@ for ball in balls:
 for obstacle in obstacles:
 	draw_circle(obstacle_radius, obstacle[0], obstacle[1], d_green)
 
-index = find_closest_ball(balls, bot_loc)
 
+index = find_closest_ball(balls, bot_loc)
+index = 3
 draw_line(bot_loc, balls[index], d_red)
 angle = line_angle(bot_loc, balls[index])
 
-print angle
+print "The angle is: ", angle
 
-intersections = checkIntersections(bot_loc, balls[index], obstacles)
-print len(intersections)
+intersections = []
+
+intersections = checkIntersections(bot_loc, balls[index], obstacles, intersections)
+
+print intersections
 while len(intersections) > 0:
 	intersection = intersections.pop()
-	draw_line(bot_loc, intersection[0], l_red)
-	#intersections = checkIntersections(bot_loc, intersection[0], l_red)
+	draw_line(bot_loc, intersection, black)
 
-	draw_line(intersection[0], balls[index], l_red)
-	draw_line(bot_loc, intersection[1], l_red)
-	draw_line(intersection[1], balls[index], l_red)
+	bot_loc = intersection
+	intersections = checkIntersections(bot_loc, balls[index], obstacles, intersections)
+	print intersections
 
+draw_line(bot_loc, balls[index], black)
 draw_grid(image)
 cv2.imshow('Image', image)
 
