@@ -55,7 +55,7 @@ class CvDisplayPanel(wx.Panel):
 
         #warp = perspective_transform(orig)
         #cv.ShowImage('warped', warp)
-        mask = cv.CreateImage((640,480), cv.IPL_DEPTH_8U, 3)
+        mask = cv.CreateImage((400,300), cv.IPL_DEPTH_8U, 3)
         cv.Resize(orig,mask)
         return mask
 
@@ -79,9 +79,9 @@ class CvDisplayPanel(wx.Panel):
         #img = ImagePro # Convert the raw image data to something wxpython can handle.
         #cv.CvtColor(img, img, cv.CV_BGR2RGB) # fix color distortions
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        self.ImagePro(capture,orig,processed,storage,grid)
-        cv.CvtColor(orig, orig, cv.CV_BGR2RGB)
-        self.bmp = wx.BitmapFromBuffer(640, 300, orig.tostring())
+        mask = self.ImagePro(capture,orig,processed,storage,grid)
+        cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
+        self.bmp = wx.BitmapFromBuffer(mask.width, mask.height, mask.tostring())
         sbmp = wx.StaticBitmap(self, -1, bitmap=self.bmp) # Display the resulting image
 
         
@@ -98,11 +98,11 @@ class CvDisplayPanel(wx.Panel):
 
     def onNextFrame(self, evt):
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        self.ImagePro(capture,orig,processed,storage,grid)
+        mask = self.ImagePro(capture,orig,processed,storage,grid)
         #img = processed
-        if orig:
-            cv.CvtColor(orig, orig, cv.CV_BGR2RGB)
-            self.bmp.CopyFromBuffer(orig.tostring()) # update the bitmap to the current frame
+        if mask:
+            cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
+            self.bmp.CopyFromBuffer(mask.tostring()) # update the bitmap to the current frame
             self.Refresh()
             #del(storage)
             #storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
@@ -147,7 +147,7 @@ class CvDisplayPanel2(wx.Panel):
 
         #warp = perspective_transform(orig)
         #cv.ShowImage('warped', warp)
-        mask = cv.CreateImage((640,480), cv.IPL_DEPTH_8U, 3)
+        mask = cv.CreateImage((400,300), cv.IPL_DEPTH_8U, 3)
         cv.Resize(orig,mask)
         return mask
 
@@ -170,9 +170,9 @@ class CvDisplayPanel2(wx.Panel):
         #img = ImagePro # Convert the raw image data to something wxpython can handle.
         #cv.CvtColor(img, img, cv.CV_BGR2RGB) # fix color distortions
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        self.ImagePro(capture2,orig2,processed2,storage,grid)
-        cv.CvtColor(orig, orig, cv.CV_BGR2RGB)
-        self.bmp = wx.BitmapFromBuffer(640, 300, orig.tostring())
+        mask = self.ImagePro(capture2,orig2,processed2,storage,grid)
+        cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
+        self.bmp = wx.BitmapFromBuffer(mask.width, mask.height, mask.tostring())
         sbmp = wx.StaticBitmap(self, -1, bitmap=self.bmp) # Display the resulting image
 
         
@@ -189,11 +189,11 @@ class CvDisplayPanel2(wx.Panel):
     def onNextFrame(self, evt):
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
 
-        self.ImagePro(capture2,orig2,processed2,storage,grid)
+        mask = self.ImagePro(capture2,orig2,processed2,storage,grid)
         #img = processed
-        if orig2:
-            cv.CvtColor(orig2, orig2, cv.CV_BGR2RGB)
-            self.bmp.CopyFromBuffer(orig2.tostring()) # update the bitmap to the current frame
+        if mask:
+            cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
+            self.bmp.CopyFromBuffer(mask.tostring()) # update the bitmap to the current frame
             self.Refresh()
             #del(storage)
             #storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
@@ -230,6 +230,7 @@ class CvDisplayPanel3(wx.Panel):
         combined_np = np.concatenate((orig_np, orig2_np),axis=0)
         #combined = processor.draw_grid(orig)
         combined = cv.fromarray(combined_np)
+        cv.CvtColor(combined, combined, cv.CV_BGR2RGB)
 
         #print orig_np
         #print orig2_np
@@ -242,8 +243,9 @@ class CvDisplayPanel3(wx.Panel):
         #cv.Add(combined,orig,combined)
         cv.ResetImageROI(orig)
         """
-        
-        return combined
+        mask = cv.CreateImage((400,600), cv.IPL_DEPTH_8U, 3)
+        cv.Resize(combined,mask)
+        return mask
         #self.grid = processor.draw_grid(orig)    
 
 
@@ -283,9 +285,9 @@ class CvDisplayPanel3(wx.Panel):
         #img = ImagePro # Convert the raw image data to something wxpython can handle.
         #cv.CvtColor(img, img, cv.CV_BGR2RGB) # fix color distortions
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        combined = self.merge(orig,orig2,storage,grid,warp)
+        mask = self.merge(orig,orig2,storage,grid,warp)
         #cv.CvtColor(grid, grid, cv.CV_BGR2RGB)
-        self.bmp = wx.BitmapFromBuffer(combined.width, combined.height, combined.tostring())
+        self.bmp = wx.BitmapFromBuffer(mask.width, mask.height, mask.tostring())
         sbmp = wx.StaticBitmap(self, -1, bitmap=self.bmp) # Display the resulting image
 
         
@@ -302,11 +304,11 @@ class CvDisplayPanel3(wx.Panel):
     def onNextFrame(self, evt):
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
 
-        combined = self.merge(orig,orig2,storage,grid,warp)
+        mask = self.merge(orig,orig2,storage,grid,warp)
         #img = processed
-        if combined:
-            #cv.CvtColor(combined, combined, cv.CV_BGR2RGB)
-            self.bmp.CopyFromBuffer(combined.tostring()) # update the bitmap to the current frame
+        if mask:
+            #cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
+            self.bmp.CopyFromBuffer(mask.tostring()) # update the bitmap to the current frame
             self.Refresh()
             #del(storage)
             #storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
