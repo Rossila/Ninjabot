@@ -8,6 +8,7 @@ capture = cv.CaptureFromCAM(-1)
 # some random colors to draw circles and their center points with
 d_red = cv.RGB(150, 55, 65)
 l_red = cv.RGB(250, 200, 200)
+d_green = cv.RGB(55, 150, 65)
 
 def autocalibrate(orig, storage):
     
@@ -79,7 +80,7 @@ def find_circles(processed, storage, LOW):
     # @ param2 sets the minimum number of votes that an accumulator cell needs to qualify as a possible circle.
     # @ min_radius and max_radius do exactly what to mean. They set the minimum and maximum radii the function searches for.
     try:
-        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 30.0, 50, 50, 10, 70) #great to add circle constraint sizes.
+        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 30.0, 200, 50, 5, 40) #great to add circle constraint sizes.
     except:
         pass
 
@@ -101,8 +102,12 @@ def draw_circles(storage, output):
 
     for circle in circles:
         Radius, x, y = int(circle[0][2]), int(circle[0][0]), int(circle[0][1])
+        if Radius < 12:
+            cv.Circle(output, (x, y), Radius, d_red, 3, 8, 0)
+        else: 
+            cv.Circle(output, (x, y), Radius, d_green, 3, 8, 0)    
         cv.Circle(output, (x, y), 1, l_red, -1, 8, 0)
-        cv.Circle(output, (x, y), Radius, d_red, 3, 8, 0)
+        
 
 
 def draw_grid(grid):
