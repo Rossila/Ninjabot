@@ -12,6 +12,7 @@ import win32api
 import win32con 
 import processor
 import numpy as np
+import serial
 
 
 
@@ -316,14 +317,29 @@ class CvDisplayPanel3(wx.Panel):
 
 
 class Cameras(wx.Frame):
+
+        
     """ We simply derive a new class of Frame. """
     def __init__(self, parent, title):
-        wx.Frame.__init__(self, parent, title=title, size=(1280,700))
+        wx.Frame.__init__(self, parent, title=title, size=(1230,700))
 
         #self.displayPanel = CvDisplayPanel(self) # display panel for video
         #displayPanel2 = CvDisplayPanel2(self)
         #displayPanel3 = CvDisplayPanel3(self)
         
+        self.display = wx.TextCtrl(self, -1, "YOLO",  style=wx.TE_MULTILINE, size=(400,300))
+        box = wx.BoxSizer(wx.VERTICAL)
+        buttons = wx.GridSizer(2, 3, 1, 1)
+        buttons.AddMany([(wx.Button(self, 1, 'Stop') , 0, wx.EXPAND),
+                        (wx.Button(self, 2, 'Up') , 0, wx.EXPAND),
+                        (wx.Button(self, 3, 'Start') , 0, wx.EXPAND),
+                        (wx.Button(self, 4, 'Left') , 0, wx.EXPAND),
+                        (wx.Button(self, 5, 'Down') , 0, wx.EXPAND),
+                        (wx.Button(self, 6, 'Right') , 0, wx.EXPAND)])
+        #box.Add(left, 1, wx.EXPAND)
+        box.Add(self.display, 1, wx.EXPAND)
+        box.Add(buttons, 1, wx.EXPAND)
+
         right = wx.BoxSizer(wx.VERTICAL)
         right.Add(CvDisplayPanel(self), 1, wx.ALL , 0)
         right.Add(CvDisplayPanel2(self), 1, wx.ALL , 0)
@@ -338,12 +354,26 @@ class Cameras(wx.Frame):
 
         #left.Add(CvDisplayPanel3(self), 1, wx.EXPAND | wx.ALL, 0)
         left.Add(right, 1, wx.ALL, 0)
-        self.SetSizer(left) 
-        
+        #self.SetSizer(left) 
+
+
+
+        left.Add(box, 1, wx.ALL, 0)
+        self.SetSizer(left)
         
         
         
         self.Centre()
+
+        
+        self.Bind(wx.EVT_BUTTON, self.OnStop, id=1)
+        self.Bind(wx.EVT_BUTTON, self.OnUp, id=2)
+        self.Bind(wx.EVT_BUTTON, self.OnStart, id=3)
+        self.Bind(wx.EVT_BUTTON, self.OnLeft, id=4)
+        self.Bind(wx.EVT_BUTTON, self.OnDown, id=5)
+        self.Bind(wx.EVT_BUTTON, self.OnRight, id=6)
+
+
 
 
         self.CreateStatusBar() # A Statusbar in the bottom of the window
@@ -367,22 +397,89 @@ class Cameras(wx.Frame):
     def OnExit(self,evt):
         self.Close(True)  # Close the frame.
 
-class Control(wx.Frame):
-    def __init__(self, parent, title):
-        wx.Frame.__init__(self, parent, title=title, size=(200,300))
-        display = wx.TextCtrl(self, -1, '',  style=wx.TE_RIGHT)
-        box = wx.BoxSizer(wx.VERTICAL)
-        buttons = wx.GridSizer(2, 3, 1, 1)
-        buttons.AddMany([(wx.Button(self, 1, 'Stop') , 0, wx.EXPAND),
-                        (wx.Button(self, 2, 'Up') , 0, wx.EXPAND),
-                        (wx.Button(self, 3, 'Start') , 0, wx.EXPAND),
-                        (wx.Button(self, 4, 'Left') , 0, wx.EXPAND),
-                        (wx.Button(self, 5, 'Down') , 0, wx.EXPAND),
-                        (wx.Button(self, 6, 'Right') , 0, wx.EXPAND)])
-        box.Add(display, 1, wx.EXPAND)
-        box.Add(buttons, 1, wx.EXPAND)
-        self.SetSizer(box)
-        self.Centre()
+    def OnStop(self, event):
+        self.display.WriteText("Sending Command: Stop\n")
+        #print('Com Port: ' + self.ser.portstr + ' closed')
+        try: 
+            self.ser.close
+            self.display.WriteText("Com Port: " + self.ser.portstr + " closed\n")
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+
+        except AttributeError:
+            self.display.WriteText("Command: Stop Failed.\n")   
+
+
+    def OnUp(self, event):
+        self.display.WriteText("Sending Command: Up\n")
+        try: 
+            self.ser.write('w')
+            self.display.WriteText("Command: Up Sent.\n")
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+
+        except AttributeError:
+            self.display.WriteText("Command: Up Failed.\n")
+
+    def OnStart(self, event):
+        self.display.WriteText("Sending Command: Start\n")
+        try: 
+            self.ser = serial.Serial(
+                port='\\.\COM7',
+                baudrate=9600,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                bytesize=serial.EIGHTBITS
+            )
+            self.display.WriteText("Com Port: " + self.ser.portstr + " opened!\n")
+            return self.ser
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Connection Failed.\n")
+            self.ser = 0
+            return self.ser
+
+        
+
+
+    def OnLeft(self, event):
+        self.display.WriteText("Sending Command: Left\n")
+        try: 
+            self.ser.write('a')
+            self.display.WriteText("Command: Left Sent.\n")
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+
+        except AttributeError:
+            self.display.WriteText("Command: Left Failed.\n")
+
+    def OnDown(self, event):
+        self.display.WriteText("Sending Command: Down\n")
+        try: 
+            self.ser.write('s')
+            self.display.WriteText("Command: Down Sent.\n")
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+
+        except AttributeError:
+            self.display.WriteText("Command: Down Failed.\n")
+
+    def OnRight(self, event):
+        self.display.WriteText("Sending Command: Right\n")
+        try: 
+            self.ser.write('d')
+            self.display.WriteText("Command: Right Sent.\n")
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+
+        except AttributeError:
+            self.display.WriteText("Command: Right Failed.\n")
+
 
 #ImageInit(0)
 capture = cv.CaptureFromCAM(0)
@@ -401,12 +498,13 @@ warp = cv.CreateImage((orig.width*2,orig.height), cv.IPL_DEPTH_8U, 3)
 storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
 s = []
 
+
 #processor.draw_grid(grid)
 
 app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
 frame = Cameras(None, "Cameras") # A Frame is a top-level window.
 frame.Show(True)     # Show the frame.
 
-frame2 = Control(None, "Control") # A Frame is a top-level window.
-frame2.Show(True) 
+#frame2 = Control(None, "Control") # A Frame is a top-level window.
+#frame2.Show(True) 
 app.MainLoop()
