@@ -414,7 +414,7 @@ class Cameras(wx.Frame):
     def OnUp(self, event):
         self.display.WriteText("Sending Command: Up\n")
         try: 
-            self.ser.write('w')
+            self.ser.write('f')
             self.display.WriteText("Command: Up Sent.\n")
 
         except serial.SerialException:
@@ -447,7 +447,7 @@ class Cameras(wx.Frame):
     def OnLeft(self, event):
         self.display.WriteText("Sending Command: Left\n")
         try: 
-            self.ser.write('a')
+            self.ser.write('l')
             self.display.WriteText("Command: Left Sent.\n")
 
         except serial.SerialException:
@@ -459,7 +459,7 @@ class Cameras(wx.Frame):
     def OnDown(self, event):
         self.display.WriteText("Sending Command: Down\n")
         try: 
-            self.ser.write('s')
+            self.ser.write('b')
             self.display.WriteText("Command: Down Sent.\n")
 
         except serial.SerialException:
@@ -471,7 +471,7 @@ class Cameras(wx.Frame):
     def OnRight(self, event):
         self.display.WriteText("Sending Command: Right\n")
         try: 
-            self.ser.write('d')
+            self.ser.write('r')
             self.display.WriteText("Command: Right Sent.\n")
 
         except serial.SerialException:
