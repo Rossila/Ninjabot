@@ -11,12 +11,15 @@ d_green = cv.RGB(55, 150, 65)
 d_blue = cv.RGB(55, 65, 150)
 l_red = cv.RGB(250, 200, 200)
 black = cv.RGB(100, 100, 100)
+d_purple = cv.RGB(150, 55, 150)
 
 # define radii
 # make the obstacle_radius + rover_width 2/sqrt(2) times larger than it needs to be 
 ball_radius = 18
 obstacle_radius = 28
 rover_width = 50
+TRAV_UNIT = 20
+TURN_ANGLE = 5
 
 image = cv2.imread('empty.jpg')
 
@@ -39,6 +42,21 @@ def draw_grid(image):
 
 def draw_line(start, end, color):
     cv2.line(image, start, end, color, thickness = 1, lineType=8, shift=0)
+
+def draw_line_polar(start, angle, distance):
+	# convert angle to radians
+	angle = float(angle)/180 * math.pi
+	
+	print "angle in radians: ", angle
+	# x = rcos(theta)
+	# y = rsin(theta)
+	x = distance * math.cos(angle)
+	y = distance * math.sin(angle)
+
+	end = (int(start[0] + x), int(start[1] + y))
+
+	#draw_line(start, end, d_purple)
+	cv2.line(image, start, end, d_purple, thickness = 2, lineType=8, shift=0)
 
 def draw_circle(radius, x, y, color):
     cv2.circle(image, (x, y), 1, black, -1, 8, 0)
@@ -156,30 +174,114 @@ def checkIntersections(bot_loc, bot_dest, obstacles, intersections):
 		#draw_line(ln2_start_top, ln2_end_top, d_red)
 		#draw_line(ln2_start_bot, ln2_end_bot, d_red)
 		x_dspl, y_dspl = findConstants(bot_loc, bot_dest, obstacle_radius + rover_width)
-		for obstacle in obstacles:
+		for index, obstacle in enumerate(obstacles):
 			obs_proj1 = (int(obstacle[0] + x_dspl), int(obstacle[1] + y_dspl))
 			obs_proj2 = (int(obstacle[0] + -1*x_dspl), int(obstacle[1] + -1*y_dspl))
 			draw_line(obs_proj1, obs_proj2, d_blue)
 			print "obstacle", obstacle
 			print "obs_proj1", obs_proj1
-			if intersect(bot_loc, bot_dest, obs_proj1, obstacle):
-				print "intersection found at", obs_proj1
-				intersections.append(obs_proj1)
-			elif intersect(bot_loc, bot_dest, obs_proj2, obstacle):
-				print "intersection found at", obs_proj2
-				intersections.append(obs_proj2)
+			if intersect(bot_loc, bot_dest, obs_proj1, obs_proj2):
+			#	print "intersection found at", obs_proj1
+			#	intersections.append(index)
+			#elif intersect(bot_loc, bot_dest, obs_proj2, obstacle):
+			#	print "intersection found at", obs_proj2
+				intersections.append(index)
 		#print intersections
 		return intersections
-
-
 	
 	return checkObstacles(bot_loc, bot_dest, obstacles, intersections)
+
+def getPOI(bot_loc, bot_dest, obstacle, POI):
+	# theta is in radians
+	def getSlope(theta):
+		slope = math.sin(theta)/math.cos(theta)
+		return slope
+	def getTangent(bot_loc, obstacle):
+		hypotenuse = distance_between_points(bot_loc, obstacle)
+		side = obstacle_radius + rover_width
+		diff_theta = math.asin(side/float(hypotenuse))
+		theta = math.atan((obstacle[1] - float(bot_loc[1]))/(obstacle[0] - float(bot_loc[0])))
+		slope1 = getSlope(theta + diff_theta)
+		print "slope 1: ", slope1
+
+		#y = (slope)x + (displacement)
+		displacement1 = bot_loc[1] - slope1 * bot_loc[0]
+		bot_dest = (100, int(slope1 * (100) + displacement1))
+		bot_dest2 = (500, int(slope1 * 500 + displacement1))
+		draw_line(bot_dest, bot_dest2, d_green)
+
+		slope2 = getSlope(theta - diff_theta)
+		print "slope 2: ", slope2
+		#y = (slope)x + (displacement)
+		displacement2 = bot_loc[1] - slope2 * bot_loc[0]
+
+		bot_dest = (100, int(slope2 * (100) + displacement2))
+		bot_dest2 = (800, int(slope2 * 800 + displacement2))
+		draw_line(bot_dest, bot_dest2, d_blue)
+
+		draw_circle(side, obstacle[0], obstacle[1], d_red)
+		return slope1, displacement1, slope2, displacement2 
+
+	aslope1, adispl1, aslope2, adispl2 = getTangent(bot_loc, obstacle)
+	bslope1, bdispl1, bslope2, bdispl2 = getTangent(bot_dest, obstacle)
+
+
+	x1 = (bdispl1 - adispl1)/(aslope1 - bslope1)
+	y1 = bslope1 * x1 + bdispl1
+
+	draw_circle(4, int(x1), int(y1), black)
+
+	x2 = (bdispl2 - adispl2)/(aslope2 - bslope2)
+	y2 = bslope2 * x2 + bdispl2
+
+	draw_circle(4, int(x2), int(y2), black)
+	
+	x3 = (bdispl1 - adispl2)/(aslope2 - bslope1)
+	y3 = bslope1 * x3 + bdispl1
+
+	draw_circle(4, int(x3), int(y3), black)
+
+	x4 = (bdispl2 - adispl1)/(aslope1 - bslope2)
+	y4 = bslope2 * x4 + bdispl2
+
+	draw_circle(4, int(x4), int(y4), black)
+
+	if x1 > 0 and y1 > 0:
+		POI.append((int(x1), int(y1)))
+	if x2 > 0 and y2 > 0:
+		POI.append((int(x2), int(y2)))
+	if x3 > 0 and y3 > 0:
+		POI.append((int(x3), int(y3)))
+	if x4 > 0 and y4 > 0:
+		POI.append((int(x4), int(y4)))
+	
+	return POI
+
+# expected vs actual travel
+def robotTravel(bot_dir, bot_loc, next_pt):
+	angle = line_angle(bot_loc, next_pt)
+	# want turn to be between -180 to 180 degrees,
+	# neg degrees are ccw
+	# pos degrees are cw
+	turn = angle - bot_dir
+	print turn
+	turn = int(turn/TURN_ANGLE) * TURN_ANGLE
+	print turn
+	distance = distance_between_points(bot_loc, next_pt)
+	print distance
+	distance = int(distance/TRAV_UNIT + 0.50) * TRAV_UNIT
+	print distance
+
+	angle = int(bot_dir + turn)
+
+	print "bot_loc: ", bot_loc, "angle: ", angle, "distance: ", distance
+	draw_line_polar(bot_loc, angle, distance)
 
 # Initialize Coordinates
 bot_loc = (image.shape[1]/2, 0)
 bot_dir = 90
-balls = [(449, 620), (600, 200), (250, 500), (199, 100)]
-obstacles = [(400, 453), (274, 114), (588, 621)]
+balls = [(449, 620), (600, 200), (250, 500), (159, 100)]
+obstacles = [(400, 453), (274, 114), (290, 190), (588, 621)]
 
 # Draw the balls and obstacles
 for ball in balls:
@@ -190,27 +292,63 @@ for obstacle in obstacles:
 
 
 index = find_closest_ball(balls, bot_loc)
-#index = 2
+
+# FOR TESTING PURPOSES, MODIFY THIS INDEX TO CHANGE WHICH BALL TO SEARCH FOR
+index = 2
 draw_line(bot_loc, balls[index], d_red)
 angle = line_angle(bot_loc, balls[index])
 
 print "The angle is: ", angle
 
 intersections = []
+POI = []
+checked_obs = {0: False, 1: False, 2: False, 3: False}
+next_pt = (0,0)
 
 intersections = checkIntersections(bot_loc, balls[index], obstacles, intersections)
-
 print intersections
-while len(intersections) > 0:
-	intersection = intersections.pop()
-	draw_line(bot_loc, intersection, black)
 
-	bot_loc = intersection
-	intersections = checkIntersections(bot_loc, balls[index], obstacles, intersections)
-	print intersections
+if len(intersections) == 0:
+	next_pt = balls[index]
 
-draw_line(bot_loc, balls[index], black)
-draw_grid(image)
+for intersection in intersections:
+	checked_obs[intersection] = True
+	POI = getPOI(bot_loc, balls[index], obstacles[intersection], POI)
+
+print "POI: ", POI
+
+while next_pt == (0,0) and len(POI) > 0:
+	print "popped again"
+	test_pt = POI.pop(0)
+	intersections = []
+	intersections = checkIntersections(bot_loc, test_pt, obstacles, intersections)
+	if len(intersections) == 0:
+		next_pt = test_pt
+		print "We're done! The next point is: ", next_pt
+	else:
+		for intersection in intersections:
+		    if checked_obs[intersection] == False:
+				print "another obstacle was encountered, adding more POIs"
+				checked_obs[intersection] == False
+				POI = getPOI(bot_loc, balls[index], obstacles[intersection], POI)
+
+draw_circle(4, next_pt[0], next_pt[1], d_red)
+
+robotTravel(bot_dir, bot_loc, next_pt)
+
+
+
+#print intersections
+#while len(intersections) > 0:
+#	intersection = intersections.pop()
+#	draw_line(bot_loc, intersection, black)
+
+#	bot_loc = intersection
+#	intersections = checkIntersections(bot_loc, balls[index], obstacles, intersections)
+#	print intersections
+
+#draw_line(bot_loc, balls[index], black)
+#draw_grid(image)
 cv2.imshow('Image', image)
 
 cv.WaitKey()
