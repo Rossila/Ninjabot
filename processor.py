@@ -5,6 +5,7 @@ import numpy as np
 
 d_red = cv.RGB(150, 55, 65)
 l_red = cv.RGB(250, 200, 200)
+d_green = cv.RGB(55, 150, 65)
 
 def autocalibrate(orig, storage):
     
@@ -47,6 +48,12 @@ def colorFilter(img, color, calibrate):
     elif color == "blue":
         minColor = cv.Scalar(100,100,100)
         maxColor = cv.Scalar(120,255,255)
+    elif color == "red":
+        minColor = cv.Scalar(20, 70, 70)
+        maxColor = cv.Scalar(60, 255, 255)
+    elif color == "green":
+        minColor = cv.Scalar(20, 70, 70)
+        maxColor = cv.Scalar(60, 255, 255)    
     elif color == "calibrate":
          minColor = cv.Scalar(calibrate[0],calibrate[1],calibrate[2])
          maxColor = minColor
@@ -68,11 +75,13 @@ def colorFilterCombine(img, color1, color2, s):
 
     cv.Add(imgColor1, imgColor2, imgFiltered)
 
+    """
     if s != []:
         for value in s:
             imgCalibrate = colorFilter(img, "calibrate" , value)
             cv.Add(imgFiltered, imgCalibrate, imgFiltered)
             print value[0],value[1],value[2], "added"
+    """
 
     return imgFiltered 
 
@@ -99,7 +108,7 @@ def find_circles(processed, storage, LOW):
     # @ min_radius and max_radius do exactly what to mean. They set the minimum and maximum radii the function searches for.
     
     try:
-        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 30.0, 70, 70, 25, 70) #great to add circle constraint sizes.
+        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 30.0, 200, 50, 5, 40) #great to add circle constraint sizes.
     except:
         pass
 
@@ -108,7 +117,7 @@ def find_circles(processed, storage, LOW):
 
     return storage
 
-def draw_circles(storage, output):
+def draw_circles(storage, storage2,output):
     # if there are more than 30 circles something went wrong, don't draw anything
     if storage.rows <= 0:
         return
@@ -116,13 +125,41 @@ def draw_circles(storage, output):
     if storage.rows >= 30:
         return
 
+    if storage2.rows <= 0:
+        return
+
+    if storage2.rows >= 30:
+        return
+
     circles = np.asarray(storage)
     print 'drawing: ' + str(len(circles)) + ' circles'
 
     for circle in circles:
         Radius, x, y = int(circle[0][2]), int(circle[0][0]), int(circle[0][1])
-        cv.Circle(output, (x, y), 1, l_red, -1, 8, 0)
-        cv.Circle(output, (x, y), Radius, d_red, 3, 8, 0)
+        if Radius < 12:
+            #cv.Circle(output, (x, y), Radius, d_red, 3, 8, 0)
+            pass
+        else: 
+            #cv.Circle(output, (x, y), Radius, d_green, 3, 8, 0)   
+            pass 
+        #cv.Circle(output, (x, y), 1, l_red, -1, 8, 0)
+
+    
+
+    robot = np.asarray(storage2)
+    if storage2.rows == 2:
+        robot_circle = robot[0]
+        robot_circle2 = robot[1]
+            
+        Radius, x, y = int(robot_circle[0][2]), int(robot_circle[0][0]), int(robot_circle[0][1])
+            
+        Radius2, x2, y2 = int(robot_circle2[0][2]), int(robot_circle2[0][0]), int(robot_circle2[0][1])        
+
+        cv.Circle(output, (x, y), Radius, l_red, 3, 8, 0)    
+        cv.Circle(output, (x2, y2), Radius2, l_red, 3, 8, 0)
+        cv.Line(output, (x,y), (x2,y2), l_red, thickness=1, lineType=8, shift=0)
+
+
 
 
 def draw_grid(grid):
@@ -147,16 +184,15 @@ def draw_grid(grid):
      #   Line(img, pt1, pt2, color, thickness=1, lineType=8, shift=0)    
     
 
-def update_grid(storage, output, grid ):
+def update_grid(output, warp_coord ):
     #grid = cv.CreateImage((orig.width*2,orig.height), cv.IPL_DEPTH_8U, 3)
-    warp = perspective_transform(output)
-    draw_grid(warp)
-    
-    #draw_circles(storage , warp)
-    return warp
+    output = perspective_transform(output,warp_coord)
+    #draw_grid(output)
+    #draw_circles(storage , output)
+    return output
 
 
-def perspective_transform(image_in):
+def perspective_transform(image_in,warp_coord):
     #gray = cv.CreateImage(cv.GetSize(image_in),8,1)
     #cv.CvtColor(image_in,gray, cv.CV_BGR2GRAY)
     image = np.asarray(image_in[:,:])
@@ -167,13 +203,14 @@ def perspective_transform(image_in):
     #cornerMap = cv.CreateMat(image_in.height, image_in.width, cv.CV_32FC1)
     #cornerMap =cv.GoodFeaturesToTrack(gray, eig_image, temp_image, 4, 0.04, 1, useHarris = True)
     #print cornerMap #[(491.0, 461.0), (203.0, 38.0), (195.0, 58.0), (201.0, 56.0)]
-    src = np.array([[225,0],[545,44],[0,398],[450,480]],np.float32)
-    dst = np.array([[0,0],[image_in.width,image_in.height],[0,image_in.height],[image_in.width,0]],np.float32)
+    src = np.array([warp_coord[0],warp_coord[1], warp_coord[2], warp_coord[3]],np.float32)
+    dst = np.array([[0,0],[image_in.width, 0],[0, image_in.height],[image_in.width, image_in.height]],np.float32)
     retval = cv2.getPerspectiveTransform(src,dst)
     warp = cv2.warpPerspective(image, retval, (cv.GetSize(image_in)))
 
     output = cv.fromarray(warp)
 
     return output
+
 
 
