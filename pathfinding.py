@@ -16,9 +16,9 @@ d_purple = cv.RGB(150, 55, 150)
 # define radii
 # make the obstacle_radius + rover_width 2/sqrt(2) times larger than it needs to be 
 ball_radius = 18
-obstacle_radius = 28
+obstacle_radius = 33
 rover_width = 50
-TRAV_UNIT = 20
+TRAV_UNIT = 40
 TURN_ANGLE = 5
 
 image = cv2.imread('empty.jpg')
@@ -246,13 +246,13 @@ def getPOI(bot_loc, bot_dest, obstacle, POI):
 
 	draw_circle(4, int(x4), int(y4), black)
 
-	if x1 > 0 and y1 > 0:
+	if x1 > rover_width and y1 > rover_width:
 		POI.append((int(x1), int(y1)))
-	if x2 > 0 and y2 > 0:
+	if x2 > rover_width and y2 > rover_width:
 		POI.append((int(x2), int(y2)))
-	if x3 > 0 and y3 > 0:
+	if x3 > rover_width and y3 > rover_width:
 		POI.append((int(x3), int(y3)))
-	if x4 > 0 and y4 > 0:
+	if x4 > rover_width and y4 > rover_width:
 		POI.append((int(x4), int(y4)))
 	
 	return POI
@@ -278,7 +278,7 @@ def robotTravel(bot_dir, bot_loc, next_pt):
 	draw_line_polar(bot_loc, angle, distance)
 
 # Initialize Coordinates
-bot_loc = (image.shape[1]/2, 0)
+bot_loc = (image.shape[1]/2, rover_width)
 bot_dir = 90
 balls = [(449, 620), (600, 200), (250, 500), (159, 100)]
 obstacles = [(400, 453), (274, 114), (290, 190), (588, 621)]
@@ -294,7 +294,7 @@ for obstacle in obstacles:
 index = find_closest_ball(balls, bot_loc)
 
 # FOR TESTING PURPOSES, MODIFY THIS INDEX TO CHANGE WHICH BALL TO SEARCH FOR
-index = 2
+index = 3
 draw_line(bot_loc, balls[index], d_red)
 angle = line_angle(bot_loc, balls[index])
 
