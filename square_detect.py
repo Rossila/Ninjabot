@@ -134,7 +134,7 @@ while True:
     contours_green, hierarchy = cv2.findContours(green_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     for cnt in contours_red:
-        if cv2.contourArea(cnt) >= 3000:
+        if cv2.contourArea(cnt) >= 1000:
 
             moments = cv2.moments(cnt)
 
@@ -145,7 +145,7 @@ while True:
             squares.append((massCenterModel,"red"))
 
     for cnt in contours_green:
-        if cv2.contourArea(cnt) >= 3000:
+        if cv2.contourArea(cnt) >= 1000:
 
             moments = cv2.moments(cnt)
 
