@@ -145,7 +145,15 @@ while True:
                 #if massCenterModel
                 squares.append((massCenterModel,"red"))
         except TypeError:
-            pass
+            if cv.ContourArea(cnt) >= 3000:
+
+                moments = cv2.moments(cnt)
+
+                massCenterModel = (moments['m10']/moments['m00'],  
+                                      moments['m01']/moments['m00']); 
+                
+                #if massCenterModel
+                squares.append((massCenterModel,"red"))
 
     for cnt in contours_green:
         try:
@@ -160,7 +168,15 @@ while True:
                 squares.append((massCenterModel,"green"))
 
         except TypeError:
-            pass
+            if cv.ContourArea(cnt) >= 3000:
+
+                moments = cv2.moments(cnt)
+
+                massCenterModel = (moments['m10']/moments['m00'],  
+                                      moments['m01']/moments['m00']); 
+                
+                #if massCenterModel
+                squares.append((massCenterModel,"green"))
 
 
     # Find&Draw circles
