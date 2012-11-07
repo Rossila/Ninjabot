@@ -165,24 +165,39 @@ while True:
     #squares = []
     #for lista in squares:
     while squares:
-        lista = squares.pop()
+        head = squares.pop()
 
-        if (lista[1] == "red"):
-            cv.Circle(orig, (int(lista[0][0]),int(lista[0][1]) ), 1, l_red, -1, 8, 0)
+        if (head[1] == "red"):
+            tail_coord = (int(head[0][0]),int(head[0][1]) )
+            cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
             if (squares != []):
-                listb = squares.pop()
-                if(listb[1]== "green"):
-                    cv.Circle(orig, (int(listb[0][0]),int(listb[0][1]) ), 1, l_red, -1, 8, 0)
-                    cv.Line(orig, (int(lista[0][0]),int(lista[0][1])), (int(listb[0][0]),int(listb[0][1])), d_red, thickness=2, lineType=8, shift=0)
+                tail = squares.pop()
+                if(tail[1]== "green"):
+                    head_coord = (int(tail[0][0]),int(tail[0][1]))
+                    cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
+                    cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
 
-        if (lista[1] == "green"):
-            cv.Circle(orig, (int(lista[0][0]),int(lista[0][1]) ), 1, l_red, -1, 8, 0)
+        if (head[1] == "green"):
+            head_coord = (int(head[0][0]),int(head[0][1]))
+            cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
             if (squares != []):
-                listb = squares.pop()
-                if(listb[1]== "red"):
-                    cv.Circle(orig, (int(listb[0][0]),int(listb[0][1]) ), 1, l_red, -1, 8, 0)
-                    cv.Line(orig, (int(lista[0][0]),int(lista[0][1])), (int(listb[0][0]),int(listb[0][1])), d_red, thickness=2, lineType=8, shift=0)
+                tail = squares.pop()
+                if(tail[1]== "red"):
+                    tail_coord = (int(tail[0][0]),int(tail[0][1]) )
+                    cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
+                    cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
 
+        try:
+            cv.Circle(orig, head_coord, 5, l_red, -1, 8, 0)
+
+        except NameError:
+            pass
+
+        try:
+            cv.Circle(orig, tail_coord, 5, d_red, -1, 8, 0)
+
+        except NameError:
+            pass
     #    print lista
     #   orig_np = np.asarray(orig[:,:])
     #cv2.drawContours( orig_np, squares, -1, (0, 255, 0), 3 )
