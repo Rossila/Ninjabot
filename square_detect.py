@@ -134,49 +134,26 @@ while True:
     contours_green, hierarchy = cv2.findContours(green_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     for cnt in contours_red:
-        try:
-            if cv2.contourArea(cnt) >= 3000:
+        if cv2.contourArea(cnt) >= 3000:
 
-                moments = cv2.moments(cnt)
+            moments = cv2.moments(cnt)
 
-                massCenterModel = (moments['m10']/moments['m00'],  
-                                      moments['m01']/moments['m00']); 
-                
-                #if massCenterModel
-                squares.append((massCenterModel,"red"))
-        except TypeError:
-            if cv.ContourArea(cnt) >= 3000:
-
-                moments = cv2.moments(cnt)
-
-                massCenterModel = (moments['m10']/moments['m00'],  
-                                      moments['m01']/moments['m00']); 
-                
-                #if massCenterModel
-                squares.append((massCenterModel,"red"))
+            massCenterModel = (moments['m10']/moments['m00'],  
+                                  moments['m01']/moments['m00']); 
+            
+            #if massCenterModel
+            squares.append((massCenterModel,"red"))
 
     for cnt in contours_green:
-        try:
-            if cv2.contourArea(cnt) >= 3000:
+        if cv2.contourArea(cnt) >= 3000:
 
-                moments = cv2.moments(cnt)
+            moments = cv2.moments(cnt)
 
-                massCenterModel = (moments['m10']/moments['m00'],  
-                                      moments['m01']/moments['m00']); 
-                
-                #if massCenterModel
-                squares.append((massCenterModel,"green"))
-
-        except TypeError:
-            if cv.ContourArea(cnt) >= 3000:
-
-                moments = cv2.moments(cnt)
-
-                massCenterModel = (moments['m10']/moments['m00'],  
-                                      moments['m01']/moments['m00']); 
-                
-                #if massCenterModel
-                squares.append((massCenterModel,"green"))
+            massCenterModel = (moments['m10']/moments['m00'],  
+                                  moments['m01']/moments['m00']); 
+            
+            #if massCenterModel
+            squares.append((massCenterModel,"green"))
 
 
     # Find&Draw circles
