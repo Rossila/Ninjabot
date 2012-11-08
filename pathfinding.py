@@ -180,7 +180,7 @@ def checkIntersections(bot_loc, bot_dest, obstacles, intersections):
 			draw_line(obs_proj1, obs_proj2, d_blue)
 			print "obstacle", obstacle
 			print "obs_proj1", obs_proj1
-			if intersect(bot_loc, bot_dest, obs_proj1, obs_proj2):
+			if intersect(bot_loc, bot_dest, obs_proj1, obs_proj2) or distance_between_points(bot_dest, obstacle) < obstacle_radius + rover_width:
 			#	print "intersection found at", obs_proj1
 			#	intersections.append(index)
 			#elif intersect(bot_loc, bot_dest, obs_proj2, obstacle):
@@ -196,6 +196,7 @@ def getPOI(bot_loc, bot_dest, obstacle, POI):
 	def getSlope(theta):
 		slope = math.sin(theta)/math.cos(theta)
 		return slope
+
 	def getTangent(bot_loc, obstacle):
 		hypotenuse = distance_between_points(bot_loc, obstacle)
 		side = obstacle_radius + rover_width
@@ -223,38 +224,38 @@ def getPOI(bot_loc, bot_dest, obstacle, POI):
 		return slope1, displacement1, slope2, displacement2 
 
 	aslope1, adispl1, aslope2, adispl2 = getTangent(bot_loc, obstacle)
-	bslope1, bdispl1, bslope2, bdispl2 = getTangent(bot_dest, obstacle)
+	
+	# slope of tangent line coming out of the center of the circle
+	bslope1 = -1 / float(aslope1)
+	bslope2 = -1 / float(aslope2)
 
+	bdispl1 = obstacle[1] - bslope1 * obstacle[0]
+	bdispl2 = obstacle[1] - bslope2 * obstacle[0]
 
 	x1 = (bdispl1 - adispl1)/(aslope1 - bslope1)
 	y1 = bslope1 * x1 + bdispl1
-
-	draw_circle(4, int(x1), int(y1), black)
+	if int(distance_between_points((x1, y1), obstacle)) - obstacle_radius - rover_width <= 2 and x1 > rover_width and y1 > rover_width:
+		draw_circle(4, int(x1), int(y1), black)
+		POI.append((int(x1), int(y1)))
 
 	x2 = (bdispl2 - adispl2)/(aslope2 - bslope2)
 	y2 = bslope2 * x2 + bdispl2
+	if int(distance_between_points((x2, y2), obstacle)) - obstacle_radius - rover_width <=2 and x2 > rover_width and y2 > rover_width:
+		draw_circle(4, int(x2), int(y2), black)
+		POI.append((int(x2), int(y2)))
 
-	draw_circle(4, int(x2), int(y2), black)
-	
 	x3 = (bdispl1 - adispl2)/(aslope2 - bslope1)
 	y3 = bslope1 * x3 + bdispl1
-
-	draw_circle(4, int(x3), int(y3), black)
+	if int(distance_between_points((x3, y3), obstacle)) - obstacle_radius - rover_width <=2 and x3 > rover_width and y3 > rover_width:
+		draw_circle(4, int(x3), int(y3), black)
+		POI.append((int(x3), int(y3)))
 
 	x4 = (bdispl2 - adispl1)/(aslope1 - bslope2)
 	y4 = bslope2 * x4 + bdispl2
-
-	draw_circle(4, int(x4), int(y4), black)
-
-	if x1 > rover_width and y1 > rover_width:
-		POI.append((int(x1), int(y1)))
-	if x2 > rover_width and y2 > rover_width:
-		POI.append((int(x2), int(y2)))
-	if x3 > rover_width and y3 > rover_width:
-		POI.append((int(x3), int(y3)))
-	if x4 > rover_width and y4 > rover_width:
+	if int(distance_between_points((x4, y4), obstacle)) - obstacle_radius - rover_width <=2 and x4 > rover_width and y4 > rover_width:
+		draw_circle(4, int(x4), int(y4), black)
 		POI.append((int(x4), int(y4)))
-	
+
 	return POI
 
 # expected vs actual travel
@@ -317,20 +318,20 @@ for intersection in intersections:
 
 print "POI: ", POI
 
-while next_pt == (0,0) and len(POI) > 0:
-	print "popped again"
-	test_pt = POI.pop(0)
-	intersections = []
-	intersections = checkIntersections(bot_loc, test_pt, obstacles, intersections)
-	if len(intersections) == 0:
-		next_pt = test_pt
-		print "We're done! The next point is: ", next_pt
-	else:
-		for intersection in intersections:
-		    if checked_obs[intersection] == False:
-				print "another obstacle was encountered, adding more POIs"
-				checked_obs[intersection] == False
-				POI = getPOI(bot_loc, balls[index], obstacles[intersection], POI)
+#while next_pt == (0,0) and len(POI) > 0:
+#	print "popped again"
+test_pt = POI.pop(0)
+intersections = []
+intersections = checkIntersections(bot_loc, test_pt, obstacles, intersections)
+if len(intersections) == 0:
+	next_pt = test_pt
+	print "We're done! The next point is: ", next_pt
+else:
+	for intersection in intersections:
+	    if checked_obs[intersection] == False:
+			print "another obstacle was encountered, adding more POIs"
+			checked_obs[intersection] == False
+			POI = getPOI(bot_loc, balls[index], obstacles[intersection], POI)
 
 draw_circle(4, next_pt[0], next_pt[1], d_red)
 
