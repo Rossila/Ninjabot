@@ -21,8 +21,8 @@ def colorFilter(img, color):
         minColor = cv.Scalar(100,100,100)
         maxColor = cv.Scalar(120,255,255)
     elif color == "red":
-        minColor = cv.Scalar(0, 150,150)
-        maxColor = cv.Scalar(20, 255, 255)
+        minColor = cv.Scalar(160, 70,70)
+        maxColor = cv.Scalar(180, 255, 255)
     elif color == "green":
         minColor = cv.Scalar(70, 70, 70)
         maxColor = cv.Scalar(80, 255, 255)    
@@ -98,6 +98,9 @@ def draw_circles(storage, output):
 
 orig = cv.QueryFrame(capture)
 processed = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
+
+red = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
+green = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
 squares = []
 
 def angle_cos(p0, p1, p2):
@@ -108,35 +111,49 @@ while True:
     orig = cv.QueryFrame(capture)
 
     # filter for all yellow and blue - everything else is black
-    processed = colorFilterCombine(orig, "red", "green")
+    red = colorFilterCombine(orig, "red", "red")
     
     # Some processing and smoothing for easier circle detection
-    #cv.Canny(processed, processed, 5, 70, 3)
-    cv.Smooth(processed, processed, cv.CV_GAUSSIAN, 7, 7)
+    #cv.Canny(red, red, 5, 70, 3)
+    cv.Smooth(red, red, cv.CV_GAUSSIAN, 7, 7)
     
-    cv.ShowImage('processed2', processed)
+    #cv.ShowImage('red2', red)
     
-    processed_np = np.asarray(processed[:,:])
-    contours, hierarchy = cv2.findContours(processed_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    red_np = np.asarray(red[:,:])
+    contours_red, hierarchy = cv2.findContours(red_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    for cnt in contours:
-        """
-                #cnt_len = cv2.arcLength(cnt, True)
-                cnt = cv2.approxPolyDP(cnt, 0.02*cnt_len, True)
-                if len(cnt) == 4 and cv2.contourArea(cnt) > 1000 and cv2.isContourConvex(cnt):
-                    cnt = cnt.reshape(-1, 2)
-                    max_cos = np.max([angle_cos( cnt[i], cnt[(i+1) % 4], cnt[(i+2) % 4] ) for i in xrange(4)])
-                    if max_cos < 0.1:
-                        squares.append(cnt)
-        """
+    green = colorFilterCombine(orig, "green", "green")
+    
+    # Some processing and smoothing for easier circle detection
+    #cv.Canny(green, green, 5, 70, 3)
+    cv.Smooth(green, green, cv.CV_GAUSSIAN, 7, 7)
+    
+    #cv.ShowImage('green2', green)
+    
+    green_np = np.asarray(green[:,:])
+    contours_green, hierarchy = cv2.findContours(green_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        moments = cv2.moments(cnt)
+    for cnt in contours_red:
+        if cv2.contourArea(cnt) >= 1000:
 
-        massCenterModel = (moments['m10']/moments['m00'],  
-                              moments['m01']/moments['m00']); 
-        
-        #if massCenterModel
-        squares.append(massCenterModel)
+            moments = cv2.moments(cnt)
+
+            massCenterModel = (moments['m10']/moments['m00'],  
+                                  moments['m01']/moments['m00']); 
+            
+            #if massCenterModel
+            squares.append((massCenterModel,"red"))
+
+    for cnt in contours_green:
+        if cv2.contourArea(cnt) >= 1000:
+
+            moments = cv2.moments(cnt)
+
+            massCenterModel = (moments['m10']/moments['m00'],  
+                                  moments['m01']/moments['m00']); 
+            
+            #if massCenterModel
+            squares.append((massCenterModel,"green"))
 
 
     # Find&Draw circles
@@ -148,13 +165,39 @@ while True:
     #squares = []
     #for lista in squares:
     while squares:
-        lista = squares.pop()
-        cv.Circle(orig, (int(lista[0]),int(lista[1]) ), 1, l_red, -1, 8, 0)
-        if (squares != []):
-            listb = squares.pop()
-            cv.Circle(orig, (int(listb[0]),int(listb[1]) ), 1, l_red, -1, 8, 0)
-            cv.Line(orig, (int(lista[0]),int(lista[1])), (int(listb[0]),int(listb[1])), d_red, thickness=2, lineType=8, shift=0)
+        head = squares.pop()
 
+        if (head[1] == "red"):
+            tail_coord = (int(head[0][0]),int(head[0][1]) )
+            cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
+            if (squares != []):
+                tail = squares.pop()
+                if(tail[1]== "green"):
+                    head_coord = (int(tail[0][0]),int(tail[0][1]))
+                    cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
+                    cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
+
+        if (head[1] == "green"):
+            head_coord = (int(head[0][0]),int(head[0][1]))
+            cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
+            if (squares != []):
+                tail = squares.pop()
+                if(tail[1]== "red"):
+                    tail_coord = (int(tail[0][0]),int(tail[0][1]) )
+                    cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
+                    cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
+
+        try:
+            cv.Circle(orig, head_coord, 5, l_red, -1, 8, 0)
+
+        except NameError:
+            pass
+
+        try:
+            cv.Circle(orig, tail_coord, 5, d_red, -1, 8, 0)
+
+        except NameError:
+            pass
     #    print lista
     #   orig_np = np.asarray(orig[:,:])
     #cv2.drawContours( orig_np, squares, -1, (0, 255, 0), 3 )
