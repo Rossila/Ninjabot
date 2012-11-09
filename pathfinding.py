@@ -7,7 +7,7 @@ import fractions
 
 # locations of balls and obstacles
 balls = [(449, 620), (600, 200), (250, 500), (159, 100)]
-obstacles = [(400, 453), (274, 114), (290, 190), (588, 621)]
+obstacles = [(400, 453), (286, 114), (290, 190), (588, 621)]
 
 # define colors
 d_red = cv.RGB(150, 55, 65)
@@ -164,7 +164,7 @@ def checkIntersections(bot_loc, bot_dest, obstacles, intersections):
 			y_dspl = a * diff_y
 		return x_dspl, y_dspl
 
-	x_dspl, y_dspl = findConstants(bot_loc, bot_dest, avoid_radius)
+	x_dspl, y_dspl = findConstants(bot_loc, bot_dest, avoid_radius - 20) # since the avoid_radius is exaggerated, can make it slightly more lenient when checking for intersections
 	for index, obstacle in enumerate(obstacles):
 		obs_proj1 = (int(obstacle[0] + x_dspl), int(obstacle[1] + y_dspl)) # there are two projections coming out of the obstacle
 		obs_proj2 = (int(obstacle[0] + -1*x_dspl), int(obstacle[1] + -1*y_dspl)) # one in each direction
@@ -322,6 +322,8 @@ def findPath(bot_loc, next_pt, obstacles, bot_dest):
 		# repopulate the intersections list with respect to the new path from current location to next point
 		intersections = []
 		intersections = checkIntersections(bot_loc, test_pt, obstacles, intersections)
+		print "intersections: ", intersections, "for travel path to: ", test_pt
+		draw_circle(2, test_pt[0], test_pt[1], d_red)
 		if len(intersections) == 0: # if there are no intersections, this next point is a winner!
 			next_pt = test_pt
 			print "We're done! The next point is: ", next_pt
@@ -329,8 +331,9 @@ def findPath(bot_loc, next_pt, obstacles, bot_dest):
 			for intersection in intersections:
 			    if checked_obs[intersection] == False: # we don't want to check POI's twice
 					print "Another obstacle with index:", intersection," was encountered, adding more POIs"
-					checked_obs[intersection] == True
+					checked_obs[intersection] = True
 					POI = getPOI(bot_loc, bot_dest, obstacles[intersection], POI)
+					print "POI updated: ", POI
 
 	draw_circle(4, next_pt[0], next_pt[1], d_red)
 
@@ -358,11 +361,15 @@ for obstacle in obstacles:
 
 index = find_closest_ball(balls, bot_loc)
 # FOR TESTING PURPOSES, MODIFY THIS INDEX TO CHANGE WHICH BALL TO SEARCH FOR
-index = 0
+index = 3
 
 # rinse and repeat until the robot reaches its destination
 while not check_dest(bot_loc,balls[index]):
 	next_pt = findPath(bot_loc, next_pt, obstacles, balls[index])
+
+	if next_pt == (0,0): # a next point wasn't found
+		print "No next_pt was found, debug time"
+		break;
 
 	# append this path to travelled_paths list so we don't ever go in a loop
 	travelled_paths.append(((min(bot_loc[0],next_pt[0])-rover_width/2, max(bot_loc[0],next_pt[0]) + rover_width/2), \
