@@ -58,6 +58,8 @@ def draw_grid(image):
 def draw_line(start, end, color):
     cv2.line(image, start, end, color, thickness = 1, lineType=8, shift=0)
 
+# draw the line
+# return the end coordinates
 def draw_line_polar(start, angle, distance):
 	# convert angle to radians
 	angle = float(angle)/180 * math.pi
@@ -70,8 +72,10 @@ def draw_line_polar(start, angle, distance):
 
 	end = (int(start[0] + x), int(start[1] + y))
 
-	#draw_line(start, end, d_purple)
+	# draw_line(start, end, d_purple)
 	cv2.line(image, start, end, d_purple, thickness = 2, lineType=8, shift=0)
+
+	return end # return the end point
 
 def draw_circle(radius, x, y, color):
     cv2.circle(image, (x, y), 1, black, -1, 8, 0)
@@ -150,7 +154,7 @@ def checkIntersections(bot_loc, bot_dest, obstacles, intersections):
 		diff_x = - bot_dest[1] + bot_loc[1]
 
 		#we're done! close enough, don't do anything more
-		if diff_x <= 10 and diff_x >= -10 and diff_y <= 10 and diff_y >= -10: 
+		if diff_x <= 10 and diff_x >= -10 and diff_y <= 10 and diff_y >= -5: 
 			pass
 		elif diff_x == 0:
 			x_dspl = 0
@@ -283,7 +287,7 @@ def robotTravel(bot_dir, bot_loc, next_pt):
 
 	print "bot_loc: ", bot_loc, "angle: ", angle, "distance: ", distance
 	print "ROBOT DIRECTIONS: turn", turn, "move forward", distance
-	draw_line_polar(bot_loc, angle, distance)
+	return draw_line_polar(bot_loc, angle, distance) # return the end point
 
 # Finds the next point that the robot should travel to
 # Creates a list of Point of interests and finds one that is possible
@@ -338,7 +342,7 @@ def findPath(bot_loc, next_pt, obstacles, bot_dest):
 	draw_circle(4, next_pt[0], next_pt[1], d_red)
 
 	# estimates where the robot will actually go
-	robotTravel(bot_dir, bot_loc, next_pt)
+	next_pt = robotTravel(bot_dir, bot_loc, next_pt) # adjust the path
 	return next_pt
 
 # returns a boolean indicating whether or not the robot has reached it's destination
@@ -361,7 +365,7 @@ for obstacle in obstacles:
 
 index = find_closest_ball(balls, bot_loc)
 # FOR TESTING PURPOSES, MODIFY THIS INDEX TO CHANGE WHICH BALL TO SEARCH FOR
-index = 3
+index = 2
 
 # rinse and repeat until the robot reaches its destination
 while not check_dest(bot_loc,balls[index]):
