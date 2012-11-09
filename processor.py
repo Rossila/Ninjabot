@@ -49,11 +49,11 @@ def colorFilter(img, color, calibrate):
         minColor = cv.Scalar(100,100,100)
         maxColor = cv.Scalar(120,255,255)
     elif color == "red":
-        minColor = cv.Scalar(20, 70, 70)
-        maxColor = cv.Scalar(60, 255, 255)
+        minColor = cv.Scalar(160, 70,70)
+        maxColor = cv.Scalar(180, 255, 255)
     elif color == "green":
-        minColor = cv.Scalar(20, 70, 70)
-        maxColor = cv.Scalar(60, 255, 255)    
+        minColor = cv.Scalar(70, 70, 70)
+        maxColor = cv.Scalar(80, 255, 255)     
     elif color == "calibrate":
          minColor = cv.Scalar(calibrate[0],calibrate[1],calibrate[2])
          maxColor = minColor
@@ -117,7 +117,7 @@ def find_circles(processed, storage, LOW):
 
     return storage
 
-def draw_circles(storage, storage2,output):
+def draw_circles(storage,output):
     # if there are more than 30 circles something went wrong, don't draw anything
     if storage.rows <= 0:
         return
@@ -125,11 +125,6 @@ def draw_circles(storage, storage2,output):
     if storage.rows >= 30:
         return
 
-    if storage2.rows <= 0:
-        return
-
-    if storage2.rows >= 30:
-        return
 
     circles = np.asarray(storage)
     print 'drawing: ' + str(len(circles)) + ' circles'
@@ -137,27 +132,14 @@ def draw_circles(storage, storage2,output):
     for circle in circles:
         Radius, x, y = int(circle[0][2]), int(circle[0][0]), int(circle[0][1])
         if Radius < 12:
-            #cv.Circle(output, (x, y), Radius, d_red, 3, 8, 0)
+            cv.Circle(output, (x, y), Radius, d_red, 3, 8, 0)
             pass
         else: 
-            #cv.Circle(output, (x, y), Radius, d_green, 3, 8, 0)   
-            pass 
-        #cv.Circle(output, (x, y), 1, l_red, -1, 8, 0)
+            cv.Circle(output, (x, y), Radius, d_green, 3, 8, 0)   
+             
+        cv.Circle(output, (x, y), 1, l_red, -1, 8, 0)
 
     
-
-    robot = np.asarray(storage2)
-    if storage2.rows == 2:
-        robot_circle = robot[0]
-        robot_circle2 = robot[1]
-            
-        Radius, x, y = int(robot_circle[0][2]), int(robot_circle[0][0]), int(robot_circle[0][1])
-            
-        Radius2, x2, y2 = int(robot_circle2[0][2]), int(robot_circle2[0][0]), int(robot_circle2[0][1])        
-
-        cv.Circle(output, (x, y), Radius, l_red, 3, 8, 0)    
-        cv.Circle(output, (x2, y2), Radius2, l_red, 3, 8, 0)
-        cv.Line(output, (x,y), (x2,y2), l_red, thickness=1, lineType=8, shift=0)
 
 
 
@@ -214,3 +196,83 @@ def perspective_transform(image_in,warp_coord):
 
 
 
+def robot_tracking(orig, squares):
+    red = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
+    green = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
+    # filter for all yellow and blue - everything else is black
+    red = colorFilterCombine(orig, "red", "red",1)
+    
+
+    cv.Smooth(red, red, cv.CV_GAUSSIAN, 7, 7)
+    
+    
+    red_np = np.asarray(red[:,:])
+    contours_red, hierarchy = cv2.findContours(red_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    green = colorFilterCombine(orig, "green", "green",1)
+    
+
+    cv.Smooth(green, green, cv.CV_GAUSSIAN, 7, 7)
+    
+
+    
+    green_np = np.asarray(green[:,:])
+    contours_green, hierarchy = cv2.findContours(green_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    for cnt in contours_red:
+        if cv2.contourArea(cnt) >= 1000:
+
+            moments = cv2.moments(cnt)
+
+            massCenterModel = (moments['m10']/moments['m00'],  
+                                  moments['m01']/moments['m00']); 
+            
+            #if massCenterModel
+            squares.append((massCenterModel,"red"))
+
+    for cnt in contours_green:
+        if cv2.contourArea(cnt) >= 1000:
+
+            moments = cv2.moments(cnt)
+
+            massCenterModel = (moments['m10']/moments['m00'],  
+                                  moments['m01']/moments['m00']); 
+            
+
+            squares.append((massCenterModel,"green"))
+
+    while squares:
+        head = squares.pop()
+
+        if (head[1] == "red"):
+            tail_coord = (int(head[0][0]),int(head[0][1]) )
+            cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
+            if (squares != []):
+                tail = squares.pop()
+                if(tail[1]== "green"):
+                    head_coord = (int(tail[0][0]),int(tail[0][1]))
+                    cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
+                    cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
+
+        if (head[1] == "green"):
+            head_coord = (int(head[0][0]),int(head[0][1]))
+            cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
+            if (squares != []):
+                tail = squares.pop()
+                if(tail[1]== "red"):
+                    tail_coord = (int(tail[0][0]),int(tail[0][1]) )
+                    cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
+                    cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
+
+        try:
+            cv.Circle(orig, head_coord, 5, l_red, -1, 8, 0)
+
+        except NameError:
+            print "fail"
+
+        try:
+            cv.Circle(orig, tail_coord, 5, d_red, -1, 8, 0)
+
+        except NameError:
+            print "fail"
+    squares = []

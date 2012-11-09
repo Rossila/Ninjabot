@@ -19,32 +19,32 @@ import serial
 #The panel containing the webcam video
 class CvDisplayPanel(wx.Panel):
 
-    def ImagePro(self,capture,orig,processed,storage,storage2,grid):
+    def ImagePro(self,capture,orig,processed,storage,grid):
         orig = cv.QueryFrame(capture)
         #cv.Normalize(orig)
         # filter for all yellow and blue - everything else is black
         processed = processor.colorFilterCombine(orig, "yellow", "blue" ,s)
-        robot = processor.colorFilterCombine(orig, "red", "green" ,s)
+        #robot = processor.colorFilterCombine(orig, "red", "green" ,s)
         
         # Some processing and smoothing for easier circle detection
         cv.Canny(processed, processed, 5, 70, 3)
         cv.Smooth(processed, processed, cv.CV_GAUSSIAN, 7, 7)
-        cv.Canny(robot, robot, 5, 70, 3)
-        cv.Smooth(robot, robot, cv.CV_GAUSSIAN, 7, 7)
+        #cv.Canny(robot, robot, 5, 70, 3)
+        #cv.Smooth(robot, robot, cv.CV_GAUSSIAN, 7, 7)
         
         #cv.ShowImage('processed2', processed)
         
         # Find&Draw circles
         processor.find_circles(processed, storage, 100)
 
-        processor.find_circles(robot, storage2, 100)
+        #processor.find_circles(robot, storage2, 100)
         #if it is in the range of 1 to 9, we can try and recalibrate our filter
         #if 1 <= storage.rows < 10:
         #    s = autocalibrate(orig, storage)
             
         #print storage2
 
-        processor.draw_circles(storage,storage2, orig)
+        processor.draw_circles(storage, orig)
         #processor.draw_circles(storage2, orig)
         mask = cv.CreateImage((400,300), cv.IPL_DEPTH_8U, 3)
         cv.Resize(orig,mask)
@@ -70,8 +70,8 @@ class CvDisplayPanel(wx.Panel):
         #img = ImagePro # Convert the raw image data to something wxpython can handle.
         #cv.CvtColor(img, img, cv.CV_BGR2RGB) # fix color distortions
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        storage2 = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        mask = self.ImagePro(capture,orig,processed,storage,storage2,grid)
+        #storage2 = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
+        mask = self.ImagePro(capture,orig,processed,storage,grid)
         cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
         self.bmp = wx.BitmapFromBuffer(mask.width, mask.height, mask.tostring())
         sbmp = wx.StaticBitmap(self, -1, bitmap=self.bmp) # Display the resulting image
@@ -90,8 +90,8 @@ class CvDisplayPanel(wx.Panel):
 
     def onNextFrame(self, evt):
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        storage2 = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        mask = self.ImagePro(capture,orig,processed,storage,storage2,grid)
+        #storage2 = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
+        mask = self.ImagePro(capture,orig,processed,storage,grid)
         #img = processed
         if mask:
             cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
@@ -201,8 +201,8 @@ class CvDisplayPanel3(wx.Panel):
  
         orig = processor.update_grid(orig,warp_coord)
         orig2 = processor.update_grid(orig2,warp_coord2) 
-        processor.draw_grid(orig)
-        processor.draw_grid(orig2)
+        #processor.draw_grid(orig)
+        #processor.draw_grid(orig2)
 
 
         orig_np = np.asarray(orig[:,:])
@@ -214,7 +214,7 @@ class CvDisplayPanel3(wx.Panel):
         combined = cv.fromarray(combined_np)
         cv.CvtColor(combined, combined, cv.CV_BGR2RGB)
 
-
+        processor.robot_tracking(combined, squares)
         mask = cv.CreateImage((400,600), cv.IPL_DEPTH_8U, 3)
         cv.Resize(combined,mask)
         return mask
@@ -296,14 +296,14 @@ class Cameras(wx.Frame):
 
         right = wx.BoxSizer(wx.VERTICAL)
         right.Add(CvDisplayPanel(self), 1, wx.ALL , 0)
-        #right.Add(CvDisplayPanel2(self), 1, wx.ALL , 0)
+        right.Add(CvDisplayPanel2(self), 1, wx.ALL , 0)
         #right.Add(CvDisplayPanel3(self), 1, wx.EXPAND | wx.ALL, 0)
        # self.SetSizer(right)
         
         #self.SetSizer(right)
         #self.SetSizer(right)
         left = wx.BoxSizer(wx.HORIZONTAL)
-        #left.Add(CvDisplayPanel3(self), 1, wx.ALL, 0)
+        left.Add(CvDisplayPanel3(self), 1, wx.ALL, 0)
         #left = wx.BoxSizer(wx.HORIZONTAL)
 
         #left.Add(CvDisplayPanel3(self), 1, wx.EXPAND | wx.ALL, 0)
@@ -452,7 +452,7 @@ warp = cv.CreateImage((orig.width*2,orig.height), cv.IPL_DEPTH_8U, 3)
 storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
 storage2 = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
 s = []
-
+squares = []
 
 y_co = 0
 x_co = 0
