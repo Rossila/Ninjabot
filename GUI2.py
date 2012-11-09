@@ -19,7 +19,7 @@ import serial
 #The panel containing the webcam video
 class CvDisplayPanel(wx.Panel):
 
-    def ImagePro(self,capture,orig,processed,storage,grid):
+    def ImagePro(self,capture,orig,processed,storage,grid,squares):
         orig = cv.QueryFrame(capture)
         #cv.Normalize(orig)
         # filter for all yellow and blue - everything else is black
@@ -44,8 +44,11 @@ class CvDisplayPanel(wx.Panel):
             
         #print storage2
 
+        combined = processor.robot_tracking(orig, squares)
+
         processor.draw_circles(storage, orig)
         #processor.draw_circles(storage2, orig)
+
         mask = cv.CreateImage((400,300), cv.IPL_DEPTH_8U, 3)
         cv.Resize(orig,mask)
         return mask
@@ -71,7 +74,7 @@ class CvDisplayPanel(wx.Panel):
         #cv.CvtColor(img, img, cv.CV_BGR2RGB) # fix color distortions
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
         #storage2 = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        mask = self.ImagePro(capture,orig,processed,storage,grid)
+        mask = self.ImagePro(capture,orig,processed,storage,grid,squares)
         cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
         self.bmp = wx.BitmapFromBuffer(mask.width, mask.height, mask.tostring())
         sbmp = wx.StaticBitmap(self, -1, bitmap=self.bmp) # Display the resulting image
@@ -91,7 +94,7 @@ class CvDisplayPanel(wx.Panel):
     def onNextFrame(self, evt):
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
         #storage2 = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        mask = self.ImagePro(capture,orig,processed,storage,grid)
+        mask = self.ImagePro(capture,orig,processed,storage,grid,squares)
         #img = processed
         if mask:
             cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
@@ -103,7 +106,7 @@ class CvDisplayPanel(wx.Panel):
 
 class CvDisplayPanel2(wx.Panel):
 
-    def ImagePro(self,capture,orig,processed,storage,grid):
+    def ImagePro(self,capture,orig,processed,storage,grid,squares):
         orig = cv.QueryFrame(capture)
         #cv.Normalize(orig)
         # filter for all yellow and blue - everything else is black
@@ -123,6 +126,7 @@ class CvDisplayPanel2(wx.Panel):
         #    s = autocalibrate(orig, storage)
             
 
+        combined = processor.robot_tracking(orig, squares)
 
         processor.draw_circles(storage, orig)
 
@@ -140,6 +144,8 @@ class CvDisplayPanel2(wx.Panel):
 
         #warp = perspective_transform(orig)
         #cv.ShowImage('warped', warp)
+        #combined = processor.robot_tracking(orig, squares)
+
         mask = cv.CreateImage((400,300), cv.IPL_DEPTH_8U, 3)
         cv.Resize(orig,mask)
         return mask
@@ -163,7 +169,7 @@ class CvDisplayPanel2(wx.Panel):
         #img = ImagePro # Convert the raw image data to something wxpython can handle.
         #cv.CvtColor(img, img, cv.CV_BGR2RGB) # fix color distortions
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
-        mask = self.ImagePro(capture2,orig2,processed2,storage,grid)
+        mask = self.ImagePro(capture2,orig2,processed2,storage,grid,squares)
         cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
         self.bmp = wx.BitmapFromBuffer(mask.width, mask.height, mask.tostring())
         sbmp = wx.StaticBitmap(self, -1, bitmap=self.bmp) # Display the resulting image
@@ -182,7 +188,7 @@ class CvDisplayPanel2(wx.Panel):
     def onNextFrame(self, evt):
         storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
 
-        mask = self.ImagePro(capture2,orig2,processed2,storage,grid)
+        mask = self.ImagePro(capture2,orig2,processed2,storage,grid,squares)
         #img = processed
         if mask:
             cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
@@ -214,7 +220,6 @@ class CvDisplayPanel3(wx.Panel):
         combined = cv.fromarray(combined_np)
         cv.CvtColor(combined, combined, cv.CV_BGR2RGB)
 
-        processor.robot_tracking(combined, squares)
         mask = cv.CreateImage((400,600), cv.IPL_DEPTH_8U, 3)
         cv.Resize(combined,mask)
         return mask

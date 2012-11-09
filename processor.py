@@ -240,7 +240,7 @@ def robot_tracking(orig, squares):
             
 
             squares.append((massCenterModel,"green"))
-
+    print squares
     while squares:
         head = squares.pop()
 
@@ -275,4 +275,6 @@ def robot_tracking(orig, squares):
 
         except NameError:
             print "fail"
+
     squares = []
+    return orig
