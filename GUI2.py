@@ -530,12 +530,12 @@ while len(warp_coord2) < 4:
     else:
         cur_pos = "bottom right"
 
-    orig = cv.QueryFrame(capture)
+    orig2 = cv.QueryFrame(capture2)
     
     cv.SetMouseCallback("calibrate",on_mouse, 0);
 
-    cv.PutText(orig, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
-    cv.ShowImage('calibrate', orig)
+    cv.PutText(orig2, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
+    cv.ShowImage('calibrate', orig2)
     
     if cv.WaitKey(10) == 27:
         break
