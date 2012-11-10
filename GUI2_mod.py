@@ -22,7 +22,7 @@ class CvDisplayPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.capture1 = cv.CaptureFromCAM(0)
-        self.capture2 = cv.CaptureFromCAM(1)
+        self.capture2 = cv.CaptureFromCAM(0)
 
         # reduce flickering
         self.SetCompositeMode(True)
@@ -75,6 +75,8 @@ class CvDisplayPanel(wx.Panel):
 
         cv.ResetImageROI(mask)
 
+        mask = self.findCircles(mask)
+
         #cv.ShowImage("added together!", mask)
         #cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
 
@@ -89,27 +91,32 @@ class CvDisplayPanel(wx.Panel):
             exstyle &= ~win32con.WS_EX_COMPOSITED 
         win32api.SetWindowLong(self.GetHandle(), win32con.GWL_EXSTYLE, exstyle) 
     
-    # get image
-    def ImagePro(self,capture):
-        orig = cv.QueryFrame(capture)
-        
+    def findCircles(self, mask):
         # filter for all yellow and blue - everything else is black
-        #processed = processor.colorFilterCombine(orig, "yellow", "blue" ,s)
+        processed = processor.colorFilterCombine(mask, "yellow", "blue" ,s)
         
         # Some processing and smoothing for easier circle detection
-        #cv.Canny(processed, processed, 5, 70, 3)
-        #cv.Smooth(processed, processed, cv.CV_GAUSSIAN, 7, 7)
+        cv.Canny(processed, processed, 5, 70, 3)
+        cv.Smooth(processed, processed, cv.CV_GAUSSIAN, 7, 7)
+
+        #cv.ShowImage("processed", processed)
+        
+        storage = cv.CreateMat(mask.width, 1, cv.CV_32FC3)
 
         # Find&Draw circles
-        #processor.find_circles(processed, storage, 100)
+        processor.find_circles(processed, storage, 100)
         # robot location detection
         #combined = processor.robot_tracking(orig, squares)
 
-        #processor.draw_circles(storage, orig)
+        processor.draw_circles(storage, mask)
         
-        #mask = cv.CreateImage((400,300), cv.IPL_DEPTH_8U, 3)
-        #cv.Resize(orig,mask)
-        #return mask
+        #cv.ShowImage("did it find circles?", mask)
+        return mask
+
+    # get image
+    def ImagePro(self,capture):
+        orig = cv.QueryFrame(capture)
+
         return orig
 
     # update image each frame
@@ -262,7 +269,7 @@ class Cameras(wx.Frame):
             self.display.WriteText("Command: Right Failed.\n")
 
 capture1 = cv.CaptureFromCAM(0)
-capture2 = cv.CaptureFromCAM(1)
+capture2 = cv.CaptureFromCAM(0)
 
 orig = cv.QueryFrame(capture1)
 orig2 = cv.QueryFrame(capture2)
