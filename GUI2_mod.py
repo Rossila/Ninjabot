@@ -19,6 +19,8 @@ import serial
 class CvDisplayPanel(wx.Panel):
     TIMER_PLAY_ID = 101 
     CHECK_INDEX = 0
+    balls = []
+    obstacles = []
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -100,6 +102,38 @@ class CvDisplayPanel(wx.Panel):
         else: 
             exstyle &= ~win32con.WS_EX_COMPOSITED 
         win32api.SetWindowLong(self.GetHandle(), win32con.GWL_EXSTYLE, exstyle) 
+
+    def verify_circles(self, unsorted_list):
+        def key(x, y):
+            return x/10 * 100 + y/10
+
+        exist_nodes = {}
+        counted_list = []
+        sorted_list = []
+
+        for node in unsorted_list:
+            try:
+                exist_nodes[key(node[0], node[1])] = exist_nodes[key(node[0], node[1])] + 1
+                if exist_nodes[key(node[0], node[1])] >= 3:
+                    sorted_list.append(node)
+                    exist_nodes[key(node[0], node[1])] = -10
+                    for x in range(1,4):
+                        exist_nodes[key(node[0] - x*10, node[1] - x*10)] = -10
+                        exist_nodes[key(node[0] - x*10, node[1] + x*10)] = -10
+                        exist_nodes[key(node[0] + x*10, node[1] - x*10)] = -10
+                        exist_nodes[key(node[0] + x*10, node[1] + x*10)] = -10
+            except:
+                exist_nodes[key(node[0], node[1])] = 1
+                for x in range(1,4):
+                    exist_nodes[key(node[0] - x*10, node[1] - x*10)] = 1
+                    exist_nodes[key(node[0] - x*10, node[1] + x*10)] = 1
+                    exist_nodes[key(node[0] + x*10, node[1] - x*10)] = 1
+                    exist_nodes[key(node[0] + x*10, node[1] + x*10)] = 1
+
+        print "exist_nodes: ", exist_nodes
+        print "sorted_list: ", sorted_list
+
+        return sorted_list
     
     def findCircles(self, mask):
         # filter for all yellow and blue - everything else is black
@@ -118,13 +152,26 @@ class CvDisplayPanel(wx.Panel):
         # robot location detection
         combined = processor.robot_tracking(mask, squares)
 
-        balls, obstacles = processor.sort_circles(storage)
-        processor.draw_circles(balls, obstacles, mask)
+        cur_balls, cur_obstacles = processor.sort_circles(storage)
+
+        for ball in cur_balls:
+            self.balls.append(ball)
+
+        for obstacle in cur_obstacles:
+            self.obstacles.append(obstacle)
         
         #cv.ShowImage("did it find circles?", mask)
 
-        if self.CHECK_INDEX == 5: # circle finding is compared over the last 5 frames
+        if self.CHECK_INDEX == 8: # circle finding is compared over the last 5 frames
             self.CHECK_INDEX = 0
+
+            self.balls = self.verify_circles(self.balls)
+            self.obstacles = self.verify_circles(self.obstacles)
+
+            processor.draw_circles(self.balls, self.obstacles, mask)
+
+            self.balls = []
+            self.obstacles = []
         else:
             self.CHECK_INDEX = self.CHECK_INDEX + 1
 
