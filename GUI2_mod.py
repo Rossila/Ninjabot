@@ -55,12 +55,12 @@ class CvDisplayPanel(wx.Panel):
             warp1 = orig1
 
         try:
-            warp2 = processor.perspective_transform(orig2, warp_coord)
+            warp2 = processor.perspective_transform(orig2, warp_coord2)
         except:
             warp2 = orig2
 
         mask = cv.CreateImage((800,800), cv.IPL_DEPTH_8U, 3)
-        cv.SetImageROI(mask, (0, 400, 800, 400))
+        cv.SetImageROI(mask, (0, 0, 800, 400))
 
         test1 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
         cv.Resize(warp1, test1)
@@ -68,7 +68,7 @@ class CvDisplayPanel(wx.Panel):
         cv.Copy(test1, mask)
 
         cv.ResetImageROI(mask)
-        cv.SetImageROI(mask, (0, 0, 800, 400))
+        cv.SetImageROI(mask, (0, 400, 800, 400))
         test2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
         cv.Resize(warp2, test2)
         cv.Copy(test2, mask)
