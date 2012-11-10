@@ -220,7 +220,7 @@ class CvDisplayPanel3(wx.Panel):
         combined = cv.fromarray(combined_np)
         cv.CvtColor(combined, combined, cv.CV_BGR2RGB)
 
-        mask = cv.CreateImage((800,600), cv.IPL_DEPTH_8U, 3)
+        mask = cv.CreateImage((400,600), cv.IPL_DEPTH_8U, 3)
         cv.Resize(combined,mask)
         return mask
 
@@ -274,28 +274,30 @@ class CvDisplayPanel3(wx.Panel):
             #storage = cv.CreateMat(orig.width, 1, cv.CV_32FC3)
         evt.Skip()
 
+
 class Cameras(wx.Frame):
 
+        
     """ We simply derive a new class of Frame. """
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=(1230,700))
 
-        #displayPanel = CvDisplayPanel(self) # display panel for video
+        #self.displayPanel = CvDisplayPanel(self) # display panel for video
         #displayPanel2 = CvDisplayPanel2(self)
         #displayPanel3 = CvDisplayPanel3(self)
         
-        #self.display = wx.TextCtrl(self, -1, "YOLO",  style=wx.TE_MULTILINE, size=(60,30))
-        #box = wx.BoxSizer(wx.VERTICAL)
-        #buttons = wx.GridSizer(2, 3, 1, 1)
-        #buttons.AddMany([(wx.Button(self, 1, 'Stop') , 0, wx.ALL),
-        #                (wx.Button(self, 2, 'Up') , 0, wx.ALL),
-        #                (wx.Button(self, 3, 'Start') , 0, wx.ALL),
-        #                (wx.Button(self, 4, 'Left') , 0, wx.ALL),
-        #                (wx.Button(self, 5, 'Down') , 0, wx.ALL),
-        #                (wx.Button(self, 6, 'Right') , 0, wx.ALL)])
-        #box.Add(left, 1, wx.ALL)
-        #box.Add(self.display, 1, wx.ALL)
-        #box.Add(buttons, 1, wx.ALL)
+        self.display = wx.TextCtrl(self, -1, "YOLO",  style=wx.TE_MULTILINE, size=(400,300))
+        box = wx.BoxSizer(wx.VERTICAL)
+        buttons = wx.GridSizer(2, 3, 1, 1)
+        buttons.AddMany([(wx.Button(self, 1, 'Stop') , 0, wx.EXPAND),
+                        (wx.Button(self, 2, 'Up') , 0, wx.EXPAND),
+                        (wx.Button(self, 3, 'Start') , 0, wx.EXPAND),
+                        (wx.Button(self, 4, 'Left') , 0, wx.EXPAND),
+                        (wx.Button(self, 5, 'Down') , 0, wx.EXPAND),
+                        (wx.Button(self, 6, 'Right') , 0, wx.EXPAND)])
+        #box.Add(left, 1, wx.EXPAND)
+        box.Add(self.display, 1, wx.EXPAND)
+        box.Add(buttons, 1, wx.EXPAND)
 
         right = wx.BoxSizer(wx.VERTICAL)
         right.Add(CvDisplayPanel(self), 1, wx.ALL , 0)
@@ -315,56 +317,6 @@ class Cameras(wx.Frame):
 
 
 
-        #left.Add(box, 1, wx.ALL, 0)
-        self.SetSizer(left)
-        
-        
-        
-        self.Centre()
-
-class Control(wx.Frame):
-
-        
-    """ We simply derive a new class of Frame. """
-    def __init__(self, parent, title):
-        wx.Frame.__init__(self, parent, title=title, size=(200,200))
-
-        #displayPanel = CvDisplayPanel(self) # display panel for video
-        #displayPanel2 = CvDisplayPanel2(self)
-        #displayPanel3 = CvDisplayPanel3(self)
-        
-        self.display = wx.TextCtrl(self, -1, "YOLO",  style=wx.TE_MULTILINE, size=(60,30))
-        box = wx.BoxSizer(wx.VERTICAL)
-        buttons = wx.GridSizer(2, 3, 1, 1)
-        buttons.AddMany([(wx.Button(self, 1, 'Stop') , 0, wx.ALL),
-                        (wx.Button(self, 2, 'Up') , 0, wx.ALL),
-                        (wx.Button(self, 3, 'Start') , 0, wx.ALL),
-                        (wx.Button(self, 4, 'Left') , 0, wx.ALL),
-                        (wx.Button(self, 5, 'Down') , 0, wx.ALL),
-                        (wx.Button(self, 6, 'Right') , 0, wx.ALL),
-                        (wx.Button(self, 7, 'Warp') , 0, wx.ALL)])
-        #box.Add(left, 1, wx.ALL)
-        box.Add(self.display, 1, wx.ALL)
-        box.Add(buttons, 1, wx.ALL)
-
-        #right = wx.BoxSizer(wx.VERTICAL)
-        #right.Add(CvDisplayPanel(self), 1, wx.ALL , 0)
-        #right.Add(CvDisplayPanel2(self), 1, wx.ALL , 0)
-        #right.Add(CvDisplayPanel3(self), 1, wx.EXPAND | wx.ALL, 0)
-       # self.SetSizer(right)
-        
-        #self.SetSizer(right)
-        #self.SetSizer(right)
-        left = wx.BoxSizer(wx.HORIZONTAL)
-        #left.Add(CvDisplayPanel3(self), 1, wx.ALL, 0)
-        #left = wx.BoxSizer(wx.HORIZONTAL)
-
-        #left.Add(CvDisplayPanel3(self), 1, wx.EXPAND | wx.ALL, 0)
-        #left.Add(right, 1, wx.ALL, 0)
-        #self.SetSizer(left) 
-
-
-
         left.Add(box, 1, wx.ALL, 0)
         self.SetSizer(left)
         
@@ -379,7 +331,6 @@ class Control(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnLeft, id=4)
         self.Bind(wx.EVT_BUTTON, self.OnDown, id=5)
         self.Bind(wx.EVT_BUTTON, self.OnRight, id=6)
-        self.Bind(wx.EVT_BUTTON, self.OnWarp, id=7)
 
 
 
@@ -488,63 +439,6 @@ class Control(wx.Frame):
         except AttributeError:
             self.display.WriteText("Command: Right Failed.\n")
 
-    def OnWarp(self,event):
-        self.display.WriteText("Reseting Warp Perspective\n")
-        global warp_coord
-        global warp_coord2
-
-        warp_coord = np.array([], np.float32)
-        warp_coord2 = np.array([], np.float32)
-
-
-        while len(warp_coord) < 4:
-            if len(warp_coord) == 0:
-                cur_pos = "top left"
-            elif len(warp_coord) == 1:
-                cur_pos = "top right"
-            elif len(warp_coord) == 2:
-                cur_pos = "bottom left"
-            else:
-                cur_pos = "bottom right"
-
-            orig = cv.QueryFrame(capture)
-            
-            cv.SetMouseCallback("calibrate_image1",on_mouse, 0);
-            print "trying.."
-
-            cv.PutText(orig, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
-            cv.ShowImage('calibrate_image1', orig)
-            
-            if cv.WaitKey(10) == 27:
-                break
-
-
-        print warp_coord
-        cv.DestroyWindow("calibrate_image1")
-
-        while len(warp_coord2) < 4:
-            if len(warp_coord2) == 0:
-                cur_pos = "top left"
-            elif len(warp_coord2) == 1:
-                cur_pos = "top right"
-            elif len(warp_coord2) == 2:
-                cur_pos = "bottom left"
-            else:
-                cur_pos = "bottom right"
-
-            orig2 = cv.QueryFrame(capture2)
-            
-            cv.SetMouseCallback("calibrate_image2",on_mouse2, 0);
-            print "trying.."
-
-            cv.PutText(orig2, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
-            cv.ShowImage('calibrate_image2', orig2)
-            
-            if cv.WaitKey(10) == 27:
-                break
-
-        print warp_coord2
-        cv.DestroyWindow("calibrate_image2")
 
 #ImageInit(0)
 capture = cv.CaptureFromCAM(0)
@@ -570,9 +464,6 @@ x_co = 0
 warp_coord = np.array([], np.float32)
 warp_coord2 = np.array([], np.float32)
 
-warp_coord = [[0,0],[orig.width, 0],[0, orig.height],[orig.width, orig.height]]
-
-warp_coord2 = [[0,0],[orig2.width, 0],[0, orig2.height],[orig2.width, orig2.height]]
 
 font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, 1, 0, 2, 8)
 
@@ -581,7 +472,8 @@ def on_mouse(event,x,y,flag,param):
     global x_co
     global y_co
     global warp_coord
-    
+
+
     if event == cv.CV_EVENT_LBUTTONDOWN:
         warp_coord = np.append(warp_coord, [x,y])
         warp_coord = np.reshape(warp_coord, [-1, 2])
@@ -591,8 +483,29 @@ def on_mouse(event,x,y,flag,param):
         #print "X: " + str(x)
         #print "Y: " + str(y)
 
+while len(warp_coord) < 4:
+    if len(warp_coord) == 0:
+        cur_pos = "top left"
+    elif len(warp_coord) == 1:
+        cur_pos = "top right"
+    elif len(warp_coord) == 2:
+        cur_pos = "bottom left"
+    else:
+        cur_pos = "bottom right"
 
-def on_mouse2(event,x,y,flag,param):
+    orig = cv.QueryFrame(capture)
+    
+    cv.SetMouseCallback("calibrate",on_mouse, 0);
+
+    cv.PutText(orig, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
+    cv.ShowImage('calibrate', orig)
+    
+    if cv.WaitKey(10) == 27:
+        break
+
+cv.DestroyWindow("calibrate")
+
+def on_mouse(event,x,y,flag,param):
     global x_co
     global y_co
     global warp_coord2
@@ -607,11 +520,33 @@ def on_mouse2(event,x,y,flag,param):
         #print "X: " + str(x)
         #print "Y: " + str(y)
 
+while len(warp_coord2) < 4:
+    if len(warp_coord2) == 0:
+        cur_pos = "top left"
+    elif len(warp_coord2) == 1:
+        cur_pos = "top right"
+    elif len(warp_coord2) == 2:
+        cur_pos = "bottom left"
+    else:
+        cur_pos = "bottom right"
+
+    orig2 = cv.QueryFrame(capture2)
+    
+    cv.SetMouseCallback("calibrate",on_mouse, 0);
+
+    cv.PutText(orig2, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
+    cv.ShowImage('calibrate', orig2)
+    
+    if cv.WaitKey(10) == 27:
+        break
+
+cv.DestroyWindow("calibrate")
+#processor.draw_grid(grid)
 
 app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
 frame = Cameras(None, "Cameras") # A Frame is a top-level window.
 frame.Show(True)     # Show the frame.
 
-frame2 = Control(None, "Control") # A Frame is a top-level window.
-frame2.Show(True) 
+#frame2 = Control(None, "Control") # A Frame is a top-level window.
+#frame2.Show(True) 
 app.MainLoop()
