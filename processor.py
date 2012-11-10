@@ -240,7 +240,7 @@ def robot_tracking(orig, squares):
             
 
             squares.append((massCenterModel,"green"))
-    print squares
+    #print squares
     while squares:
         head = squares.pop()
 
