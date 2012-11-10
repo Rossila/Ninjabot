@@ -18,6 +18,8 @@ import serial
 #The panel containing the webcam video
 class CvDisplayPanel(wx.Panel):
     TIMER_PLAY_ID = 101 
+    CHECK_INDEX = 0
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -107,18 +109,25 @@ class CvDisplayPanel(wx.Panel):
         cv.Canny(processed, processed, 5, 70, 3)
         cv.Smooth(processed, processed, cv.CV_GAUSSIAN, 7, 7)
 
-        #cv.ShowImage("processed", processed)
+        cv.ShowImage("processed", processed)
         
         storage = cv.CreateMat(mask.width, 1, cv.CV_32FC3)
 
         # Find&Draw circles
         processor.find_circles(processed, storage, 100)
         # robot location detection
-        #combined = processor.robot_tracking(orig, squares)
+        combined = processor.robot_tracking(mask, squares)
 
-        processor.draw_circles(storage, mask)
+        balls, obstacles = processor.sort_circles(storage)
+        processor.draw_circles(balls, obstacles, mask)
         
         #cv.ShowImage("did it find circles?", mask)
+
+        if self.CHECK_INDEX == 5: # circle finding is compared over the last 5 frames
+            self.CHECK_INDEX = 0
+        else:
+            self.CHECK_INDEX = self.CHECK_INDEX + 1
+
         return mask
 
     # get image
@@ -145,7 +154,7 @@ class Cameras(wx.Frame):
         
         self.display = wx.TextCtrl(self, -1, "YOLO",  style=wx.TE_MULTILINE, size=(400,300))
         box = wx.BoxSizer(wx.VERTICAL)
-        buttons = wx.GridSizer(2, 3, 1, 1)
+        buttons = wx.GridSizer(3, 3, 1, 1)
         buttons.AddMany([(wx.Button(self, 1, 'Stop') , 0, wx.EXPAND),
                         (wx.Button(self, 2, 'Up') , 0, wx.EXPAND),
                         (wx.Button(self, 3, 'Start') , 0, wx.EXPAND),

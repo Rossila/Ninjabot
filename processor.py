@@ -108,7 +108,7 @@ def find_circles(processed, storage, LOW):
     # @ min_radius and max_radius do exactly what to mean. They set the minimum and maximum radii the function searches for.
     
     try:
-        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 30.0, 200, 50, 5, 40) #great to add circle constraint sizes.
+        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 40.0, 200, 50, 5, 40) #great to add circle constraint sizes.
     except:
         pass
 
@@ -117,32 +117,36 @@ def find_circles(processed, storage, LOW):
 
     return storage
 
-def draw_circles(storage,output):
-    # if there are more than 30 circles something went wrong, don't draw anything
-    if storage.rows <= 0:
+def sort_circles(storage):
+    if storage.rows <= 0 or storage.rows >= 30:
         return
 
-    if storage.rows >= 30:
-        return
-
+    balls = []
+    obstacles = []
 
     circles = np.asarray(storage)
-    print 'drawing: ' + str(len(circles)) + ' circles'
 
     for circle in circles:
         Radius, x, y = int(circle[0][2]), int(circle[0][0]), int(circle[0][1])
-        if Radius < 12:
-            cv.Circle(output, (x, y), Radius, d_red, 3, 8, 0)
-            pass
+        if Radius < 13:
+            print "ball found at:", (x,y), "with radius", Radius
+            balls.append((x,y))
         else: 
-            cv.Circle(output, (x, y), Radius, d_green, 3, 8, 0)   
-             
-        cv.Circle(output, (x, y), 1, l_red, -1, 8, 0)
+            print "obstacle found at:", (x,y), "with radius", Radius
+            obstacles.append((x,y))
 
+    return balls, obstacles
+
+def draw_circles(balls, obstacles, output):
+    # if there are more than 30 circles something went wrong, don't draw anything
+    BALL_RADIUS = 13
+    OBSTACLE_RADIUS = 20
+
+    for ball in balls:
+        cv.Circle(output, (ball[0], ball[1]), BALL_RADIUS, d_red, 3, 8, 0)
     
-
-
-
+    for obstacle in obstacles:
+        cv.Circle(output, (obstacle[0], obstacle[1]), OBSTACLE_RADIUS, d_green, 3, 8, 0)
 
 def draw_grid(grid):
     #bg = cv.Scalar(255, 255, 255)
