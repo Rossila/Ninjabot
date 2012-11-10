@@ -85,8 +85,10 @@ class CvDisplayPanel(wx.Panel):
         cv.Copy(temp2, mask)
         cv.ResetImageROI(mask) # reset image ROI
 
-        mask = self.findCircles(mask) # find & draw circles using image processing
-
+        try:
+		    mask = self.findCircles(mask) # find & draw circles using image processing
+        except:
+		    pass
         #cv.ShowImage("added together!", mask)
         #cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
 
@@ -167,7 +169,7 @@ class Cameras(wx.Frame):
 
         right = wx.BoxSizer(wx.VERTICAL)
         display1 = CvDisplayPanel(self)
-        right.Add(display1, 1, wx.ALL , 0)
+        right.Add(display1, 1, wx.EXPAND , 0)
 
         left = wx.BoxSizer(wx.HORIZONTAL)
         
@@ -215,14 +217,30 @@ class Cameras(wx.Frame):
             self.display.WriteText("Com Port Error.")
 
         except AttributeError:
-            self.display.WriteText("Command: Stop Failed.\n")   
+            self.display.WriteText("Command: Stop Failed.\n")  
+
+        quit()
 
 
     def OnUp(self, event):
         self.display.WriteText("Sending Command: Up\n")
         try: 
-            self.ser.write('w')
+            self.ser.write('f')
+            self.ser.flush()
             self.display.WriteText("Command: Up Sent.\n")
+            a = self.ser.read()
+            self.ser.flush()
+            if(a == 'd'):
+                self.display.WriteText("Enter Dist")
+                try:
+                    self.ser.write('1')
+                    self.ser.flush()
+                except:
+                    self.display.WriteText("Fail.\n")
+
+            else:
+                pass    
+			
 
         except serial.SerialException:
             self.display.WriteText("Com Port Error.")
@@ -240,6 +258,10 @@ class Cameras(wx.Frame):
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS
             )
+            char = self.ser.read()
+            self.ser.flush()
+            while char != 'v':
+                pass
             self.display.WriteText("Com Port: " + self.ser.portstr + " opened!\n")
             return self.ser
 
@@ -251,8 +273,17 @@ class Cameras(wx.Frame):
     def OnLeft(self, event):
         self.display.WriteText("Sending Command: Left\n")
         try: 
-            self.ser.write('a')
-            self.display.WriteText("Command: Left Sent.\n")
+            self.ser.write('l')
+            self.ser.flush()
+            self.display.WriteText("Command: Up Left.\n")
+            a = self.ser.read()
+            self.ser.flush()
+            if(a == 'a'):
+                self.display.WriteText("Enter Angle")
+                self.ser.write("1")
+                self.ser.flush()
+            else:
+                pass 
 
         except serial.SerialException:
             self.display.WriteText("Com Port Error.")
