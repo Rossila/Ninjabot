@@ -294,7 +294,7 @@ class Cameras(wx.Frame):
             else:
                 cur_pos = "bottom right"
 
-            orig = cv.QueryFrame(capture)
+            orig = cv.QueryFrame(capture1)
             
             cv.SetMouseCallback("calibrate_image1",on_mouse, 0);
             print "trying.."
