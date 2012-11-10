@@ -22,7 +22,7 @@ class CvDisplayPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
 
         self.capture1 = cv.CaptureFromCAM(0)
-        self.capture2 = cv.CaptureFromCAM(0)
+        self.capture2 = cv.CaptureFromCAM(1)
 
         # reduce flickering
         self.SetCompositeMode(True)
@@ -49,6 +49,7 @@ class CvDisplayPanel(wx.Panel):
         orig1 = self.ImagePro(self.capture1)
         orig2 = self.ImagePro(self.capture2)
 
+        # try to warp if possible, otherwise use default images from webcam
         try:
             warp1 = processor.perspective_transform(orig1, warp_coord)
         except:
@@ -59,23 +60,30 @@ class CvDisplayPanel(wx.Panel):
         except:
             warp2 = orig2
 
+        # We will combine the two webcam images into a 800x800 image
         mask = cv.CreateImage((800,800), cv.IPL_DEPTH_8U, 3)
+
         cv.SetImageROI(mask, (0, 0, 800, 400))
 
-        test1 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
-        cv.Resize(warp1, test1)
+        # resize warp1 to be 800 x 400 (half of the complete image) copy resized
+        # image into temp1
+        temp1 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
+        cv.Resize(warp1, temp1)
 
-        cv.Copy(test1, mask)
-
+        # copy image temp1 to the bottom half of mask
+        cv.Copy(temp1, mask)
         cv.ResetImageROI(mask)
+
         cv.SetImageROI(mask, (0, 400, 800, 400))
-        test2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
-        cv.Resize(warp2, test2)
-        cv.Copy(test2, mask)
+        
+        temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
+        cv.Resize(warp2, temp2)
+        
+        # copy image temp2 to the upper half of mask
+        cv.Copy(temp2, mask)
+        cv.ResetImageROI(mask) # reset image ROI
 
-        cv.ResetImageROI(mask)
-
-        mask = self.findCircles(mask)
+        mask = self.findCircles(mask) # find & draw circles using image processing
 
         #cv.ShowImage("added together!", mask)
         #cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
@@ -121,7 +129,7 @@ class CvDisplayPanel(wx.Panel):
 
     # update image each frame
     def onNextFrame(self, evt):
-        mask = self.CombineCaptures()
+        mask = self.CombineCaptures() # get combined image from webcams
 
         if mask:
             cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
@@ -149,13 +157,10 @@ class Cameras(wx.Frame):
 
         right = wx.BoxSizer(wx.VERTICAL)
         display1 = CvDisplayPanel(self)
-        #display2 = CvDisplayPanel(self)
         right.Add(display1, 1, wx.ALL , 0)
-        #right.Add(display2, 1, wx.ALL , 0)
 
         left = wx.BoxSizer(wx.HORIZONTAL)
-        #left.Add(CvDisplayPanel(self, capture1), 1, wx.ALL, 0)
-
+        
         left.Add(right, 1, wx.ALL, 0)
 
         left.Add(box, 1, wx.ALL, 0)
@@ -269,7 +274,7 @@ class Cameras(wx.Frame):
             self.display.WriteText("Command: Right Failed.\n")
 
 capture1 = cv.CaptureFromCAM(0)
-capture2 = cv.CaptureFromCAM(0)
+capture2 = cv.CaptureFromCAM(1)
 
 orig = cv.QueryFrame(capture1)
 orig2 = cv.QueryFrame(capture2)
