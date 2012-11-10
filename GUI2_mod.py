@@ -378,6 +378,7 @@ def on_mouse(event,x,y,flag,param):
         #print "Y: " + str(y)
 
 
+
 def on_mouse2(event,x,y,flag,param):
     global x_co
     global y_co

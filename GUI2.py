@@ -548,5 +548,5 @@ frame = Cameras(None, "Cameras") # A Frame is a top-level window.
 frame.Show(True)     # Show the frame.
 
 #frame2 = Control(None, "Control") # A Frame is a top-level window.
-#frame2.Show(True) 
+#frame2.Show(True)
 app.MainLoop()
