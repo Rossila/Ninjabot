@@ -19,6 +19,7 @@ import serial
 class CvDisplayPanel(wx.Panel):
     TIMER_PLAY_ID = 101 
     CHECK_INDEX = 0
+
     balls = []
     obstacles = []
 
@@ -87,8 +88,10 @@ class CvDisplayPanel(wx.Panel):
         cv.Copy(temp2, mask)
         cv.ResetImageROI(mask) # reset image ROI
 
-        mask = self.findCircles(mask) # find & draw circles using image processing
-
+        try:
+            mask = self.findCircles(mask) # find & draw circles using image processing
+        except:
+		    pass
         #cv.ShowImage("added together!", mask)
         #cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
 
@@ -102,7 +105,7 @@ class CvDisplayPanel(wx.Panel):
         else: 
             exstyle &= ~win32con.WS_EX_COMPOSITED 
         win32api.SetWindowLong(self.GetHandle(), win32con.GWL_EXSTYLE, exstyle) 
-
+    
     def verify_circles(self, unsorted_list):
         def key(x, y):
             return x/10 * 100 + y/10
@@ -117,7 +120,7 @@ class CvDisplayPanel(wx.Panel):
                 if exist_nodes[key(node[0], node[1])] >= 3:
                     sorted_list.append(node)
                     exist_nodes[key(node[0], node[1])] = -10
-                    for x in range(1,4):
+                    for x in range(1,5):
                         exist_nodes[key(node[0] - x*10, node[1] - x*10)] = -10
                         exist_nodes[key(node[0] - x*10, node[1] + x*10)] = -10
                         exist_nodes[key(node[0] + x*10, node[1] - x*10)] = -10
@@ -162,7 +165,7 @@ class CvDisplayPanel(wx.Panel):
         
         #cv.ShowImage("did it find circles?", mask)
 
-        if self.CHECK_INDEX == 8: # circle finding is compared over the last 5 frames
+        if self.CHECK_INDEX == 10: # circle finding is compared over the last 5 frames
             self.CHECK_INDEX = 0
 
             self.balls = self.verify_circles(self.balls)
@@ -214,7 +217,7 @@ class Cameras(wx.Frame):
 
         right = wx.BoxSizer(wx.VERTICAL)
         display1 = CvDisplayPanel(self)
-        right.Add(display1, 1, wx.ALL , 0)
+        right.Add(display1, 1, wx.EXPAND , 0)
 
         left = wx.BoxSizer(wx.HORIZONTAL)
         
@@ -262,14 +265,30 @@ class Cameras(wx.Frame):
             self.display.WriteText("Com Port Error.")
 
         except AttributeError:
-            self.display.WriteText("Command: Stop Failed.\n")   
+            self.display.WriteText("Command: Stop Failed.\n")  
+
+        quit()
 
 
     def OnUp(self, event):
         self.display.WriteText("Sending Command: Up\n")
         try: 
-            self.ser.write('w')
+            self.ser.write('f')
+            self.ser.flush()
             self.display.WriteText("Command: Up Sent.\n")
+            a = self.ser.read()
+            self.ser.flush()
+            if(a == 'd'):
+                self.display.WriteText("Enter Dist")
+                try:
+                    self.ser.write('1')
+                    self.ser.flush()
+                except:
+                    self.display.WriteText("Fail.\n")
+
+            else:
+                pass    
+			
 
         except serial.SerialException:
             self.display.WriteText("Com Port Error.")
@@ -287,6 +306,10 @@ class Cameras(wx.Frame):
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS
             )
+            char = self.ser.read()
+            self.ser.flush()
+            while char != 'v':
+                pass
             self.display.WriteText("Com Port: " + self.ser.portstr + " opened!\n")
             return self.ser
 
@@ -298,8 +321,17 @@ class Cameras(wx.Frame):
     def OnLeft(self, event):
         self.display.WriteText("Sending Command: Left\n")
         try: 
-            self.ser.write('a')
-            self.display.WriteText("Command: Left Sent.\n")
+            self.ser.write('l')
+            self.ser.flush()
+            self.display.WriteText("Command: Up Left.\n")
+            a = self.ser.read()
+            self.ser.flush()
+            if(a == 'a'):
+                self.display.WriteText("Enter Angle")
+                self.ser.write("1")
+                self.ser.flush()
+            else:
+                pass 
 
         except serial.SerialException:
             self.display.WriteText("Com Port Error.")
@@ -456,4 +488,5 @@ frame.Show(True)     # Show the frame.
 
 #frame2 = Control(None, "Control") # A Frame is a top-level window.
 #frame2.Show(True) 
+
 app.MainLoop()
