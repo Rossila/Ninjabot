@@ -7,7 +7,7 @@ import fractions
 
 # locations of balls and obstacles
 balls = [(449, 620), (600, 200), (250, 500), (159, 100)]
-obstacles = [(400, 453), (286, 114), (370, 260), (588, 621)]
+obstacles = [(400, 453), (286, 114), (210, 250), (588, 621)]
 
 # define colors
 d_red = cv.RGB(150, 55, 65)
@@ -199,7 +199,15 @@ def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
 		hypotenuse = distance_between_points(bot_loc, obstacle)
 		side = avoid_radius
 		diff_theta = math.asin(side/float(hypotenuse))
-		theta = math.atan((obstacle[1] - float(bot_loc[1]))/(obstacle[0] - float(bot_loc[0])))
+		
+		# calculate theta
+		if obstacle[0] - bot_loc[0] != 0:
+			theta = math.atan((obstacle[1] - float(bot_loc[1]))/(obstacle[0] - float(bot_loc[0])))
+		elif obstacle[1] - bot_loc[1] > 0:
+			theta = math.pi/2
+		else:
+			theta = -math.pi/2
+
 		slope1 = getSlope(theta + diff_theta)
 		print "slope 1: ", slope1
 
