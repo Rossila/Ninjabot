@@ -168,7 +168,7 @@ def checkIntersections(bot_loc, bot_dest, obstacles, intersections):
 			y_dspl = a * diff_y
 		return x_dspl, y_dspl
 
-	x_dspl, y_dspl = findConstants(bot_loc, bot_dest, avoid_radius - 20) # since the avoid_radius is exaggerated, can make it slightly more lenient when checking for intersections
+	x_dspl, y_dspl = findConstants(bot_loc, bot_dest, avoid_radius - 10) # since the avoid_radius is exaggerated, can make it slightly more lenient when checking for intersections
 	for index, obstacle in enumerate(obstacles):
 		obs_proj1 = (int(obstacle[0] + x_dspl), int(obstacle[1] + y_dspl)) # there are two projections coming out of the obstacle
 		obs_proj2 = (int(obstacle[0] + -1*x_dspl), int(obstacle[1] + -1*y_dspl)) # one in each direction
@@ -269,6 +269,7 @@ def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
 		#draw_circle(4, int(x1), int(y1), d_purple)
 		toadd_POI.append((int(x4), int(y4)))
 
+	# add the points further away from the starting point first
 	if len(toadd_POI) > 1:
 		if distance_between_points(toadd_POI[0], last_pt) > distance_between_points(toadd_POI[1], last_pt):
 			POI.append(toadd_POI[0])
@@ -294,7 +295,7 @@ def robotTravel(bot_dir, bot_loc, next_pt):
 	turn = int(turn/TURN_ANGLE) * TURN_ANGLE
 	distance = distance_between_points(bot_loc, next_pt)
 	# get the closest value divisible by TRAV_UNIT
-	distance = int(distance/TRAV_UNIT + 0.50) * TRAV_UNIT
+	distance = int(distance/TRAV_UNIT) * TRAV_UNIT
 
 	angle = int(bot_dir + turn)
 
