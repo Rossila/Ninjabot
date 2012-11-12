@@ -7,7 +7,7 @@ import fractions
 
 # locations of balls and obstacles
 balls = [(449, 620), (600, 200), (250, 500), (159, 100)]
-obstacles = [(400, 453), (286, 114), (210, 250), (588, 621)]
+obstacles = [(400, 453), (286, 114), (290, 190), (588, 621)]
 
 # define colors
 d_red = cv.RGB(150, 55, 65)
@@ -198,6 +198,11 @@ def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
 	def getTangent(bot_loc, obstacle):
 		hypotenuse = distance_between_points(bot_loc, obstacle)
 		side = avoid_radius
+
+		# a hack in case the robot's current position is within the circle
+		if hypotenuse < side:
+			hypotenuse = side + 1
+
 		diff_theta = math.asin(side/float(hypotenuse))
 		
 		# calculate theta
@@ -209,13 +214,13 @@ def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
 			theta = -math.pi/2
 
 		slope1 = getSlope(theta + diff_theta)
-		print "slope 1: ", slope1
+		#print "slope 1: ", slope1
 
 		#y = (slope)x + (displacement)
 		displacement1 = bot_loc[1] - slope1 * bot_loc[0]
 
 		slope2 = getSlope(theta - diff_theta)
-		print "slope 2: ", slope2
+		#print "slope 2: ", slope2
 		#y = (slope)x + (displacement)
 		displacement2 = bot_loc[1] - slope2 * bot_loc[0]
 
@@ -370,14 +375,13 @@ def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest):
 	next_pt = robotTravel(bot_dir, bot_loc, next_pt) # adjust the path
 	return next_pt
 
+# check if this point will hit the edge of the field
 def check_boundaries((x,y)):
 	return x > rover_width and y > rover_width and x < FIELD_WIDTH - rover_width and y < FIELD_HEIGHT - rover_width
-
 
 # returns a boolean indicating whether or not the robot has reached it's destination
 def check_dest(bot_loc, bot_dest):
 	return distance_between_points(bot_loc, bot_dest) < rover_width
-
 
 # Initialize Coordinates
 bot_loc = (image.shape[1]/2, rover_width)
@@ -403,7 +407,7 @@ while not check_dest(bot_loc,balls[index]):
 
 	if next_pt == (0,0): # a next point wasn't found
 		print "No next_pt was found, debug time"
-		break;
+		break
 
 	# append this path to travelled_paths list so we don't ever go in a loop
 	travelled_paths.append(((min(bot_loc[0],next_pt[0])-rover_width/2, max(bot_loc[0],next_pt[0]) + rover_width/2), \
