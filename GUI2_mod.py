@@ -13,7 +13,7 @@ import win32con
 import processor
 import numpy as np
 import serial
-
+import path_tools
 
 #The panel containing the webcam video
 class CvDisplayPanel(wx.Panel):
@@ -22,6 +22,10 @@ class CvDisplayPanel(wx.Panel):
 
     balls = []
     obstacles = []
+    veriBalls = []
+    veriObstacles = []
+
+    next_pt = (0,0)
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -88,10 +92,7 @@ class CvDisplayPanel(wx.Panel):
         cv.Copy(temp2, mask)
         cv.ResetImageROI(mask) # reset image ROI
 
-        try:
-            mask = self.findCircles(mask) # find & draw circles using image processing
-        except:
-		    pass
+        mask = self.findCircles(mask) # find & draw circles using image processing
         #cv.ShowImage("added together!", mask)
         #cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
 
@@ -133,8 +134,8 @@ class CvDisplayPanel(wx.Panel):
                     exist_nodes[key(node[0] + x*10, node[1] - x*10)] = 1
                     exist_nodes[key(node[0] + x*10, node[1] + x*10)] = 1
 
-        print "exist_nodes: ", exist_nodes
-        print "sorted_list: ", sorted_list
+        #print "exist_nodes: ", exist_nodes
+        #print "sorted_list: ", sorted_list
 
         return sorted_list
     
@@ -157,6 +158,9 @@ class CvDisplayPanel(wx.Panel):
 
         cur_balls, cur_obstacles = processor.sort_circles(storage)
 
+        if cur_balls == None or cur_obstacles == None:
+            return mask
+
         for ball in cur_balls:
             self.balls.append(ball)
 
@@ -168,15 +172,26 @@ class CvDisplayPanel(wx.Panel):
         if self.CHECK_INDEX == 10: # circle finding is compared over the last 5 frames
             self.CHECK_INDEX = 0
 
-            self.balls = self.verify_circles(self.balls)
-            self.obstacles = self.verify_circles(self.obstacles)
+            self.veriBalls = self.verify_circles(self.balls)
+            self.veriObstacles = self.verify_circles(self.obstacles)
 
-            processor.draw_circles(self.balls, self.obstacles, mask)
+            processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
+
+            self.next_pt = path_tools.PathFind(self.veriBalls, self.veriObstacles)
+            print "next_pt: ", self.next_pt
+
+            cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13,cv.RGB(150, 55, 150), 3, 8, 0)
 
             self.balls = []
             self.obstacles = []
         else:
             self.CHECK_INDEX = self.CHECK_INDEX + 1
+            processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
+
+            bot_loc = (800/2, 25)
+            cv.Line(mask, (bot_loc[0], bot_loc[1]),(self.next_pt[0], self.next_pt[1]), cv.RGB(150, 55, 150), thickness=2, lineType=8, shift=0)
+
+            cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13, cv.RGB(150, 55, 150), 3, 8, 0)
 
         return mask
 
