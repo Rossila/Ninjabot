@@ -21,7 +21,7 @@ d_purple = cv.RGB(150, 55, 150)
 travelled_paths = []
 
 ball_radius = 18
-obstacle_radius = 33
+obstacle_radius = 20
 rover_width = 50
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
@@ -43,13 +43,15 @@ def PathFind(balls, obstacles):
     last_pt = bot_loc
 
     # Draw the balls and obstacles
-    for ball in balls:
+    '''for ball in balls:
         draw_circle(ball_radius, ball[0], ball[1], d_red)
 
     for obstacle in obstacles:
-        draw_circle(obstacle_radius, obstacle[0], obstacle[1], d_green)
-
-    index = find_closest_ball(balls, bot_loc)
+        draw_circle(obstacle_radius, obstacle[0], obstacle[1], d_green)'''
+    if balls == None or len(balls) == 0:
+        return next_pt
+    else:
+        index = find_closest_ball(balls, bot_loc)
 
     next_pt = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
 
@@ -97,7 +99,11 @@ def line_angle(startPoint, endPoint):
     x2 = float(endPoint[0])
     y2 = float(endPoint[1])
 
-    angle = math.atan((y2 - y1)/(x2 - x1)) #angle in radians
+    if x2 - x1 == 0:
+    	angle = math.pi/2
+    else:
+        angle = math.atan((y2 - y1)/(x2 - x1)) #angle in radians
+
     angle = angle * 180 / math.pi #convert to degrees
 
     if (y2 - y1) <= 0:
@@ -323,7 +329,7 @@ def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir):
     POI = [] # the list of point of interests, the next point will be chosen from here
     checked_obs = {} # to prevent us from checking for POI on the same obstacle, use a boolean dictionary
     for i, obstacle in enumerate(obstacles):
-    	checked_obs[i] = False
+        checked_obs[i] = False
     
     # populate the list of intersections with obstacles in the way of a direct path from the robots current location to the destination
     intersections = checkIntersections(bot_loc, bot_dest, obstacles, intersections)

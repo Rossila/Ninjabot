@@ -92,7 +92,7 @@ class CvDisplayPanel(wx.Panel):
         cv.Copy(temp2, mask)
         cv.ResetImageROI(mask) # reset image ROI
 
-        mask = self.findCircles(mask) # find & draw circles using image processing
+        
         #cv.ShowImage("added together!", mask)
         #cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
 
@@ -204,6 +204,8 @@ class CvDisplayPanel(wx.Panel):
     # update image each frame
     def onNextFrame(self, evt):
         mask = self.CombineCaptures() # get combined image from webcams
+
+        mask = self.findCircles(mask) # find & draw circles using image processing
 
         if mask:
             cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
