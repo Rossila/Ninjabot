@@ -22,7 +22,7 @@ travelled_paths = []
 
 ball_radius = 18
 obstacle_radius = 20
-rover_width = 50
+rover_width = 40
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
 # though it should be rover_width/2, we'll use rover_width to be on the safe side
@@ -36,8 +36,8 @@ FIELD_HEIGHT = 800
 
 image = cv2.imread('empty.jpg')
 
-def PathFind(balls, obstacles):
-    bot_loc = (FIELD_WIDTH/2, rover_width)
+def PathFind(bot_dir, bot_loc, balls, obstacles):
+    #bot_loc = (FIELD_WIDTH/2, rover_width)
     bot_dir = 90
     next_pt = (0,0)
     last_pt = bot_loc

@@ -93,7 +93,7 @@ def colorFilterCombine(img, color1, color2, s):
     cv.Erode(channel, channel, None, 1)'''
 
 def find_circles(processed, storage, LOW):
-    print "Finding circles" 
+    #print "Finding circles" 
 
     # Use Hough Circles algorithm to find circles
     # Parameters:
@@ -128,11 +128,11 @@ def sort_circles(storage):
 
     for circle in circles:
         Radius, x, y = int(circle[0][2]), int(circle[0][0]), int(circle[0][1])
-        if Radius < 13:
-            print "ball found at:", (x,y), "with radius", Radius
+        if Radius < 18:
+            #print "ball found at:", (x,y), "with radius", Radius
             balls.append((x,y))
         else: 
-            print "obstacle found at:", (x,y), "with radius", Radius
+            #print "obstacle found at:", (x,y), "with radius", Radius
             obstacles.append((x,y))
 
     return balls, obstacles
@@ -201,10 +201,12 @@ def perspective_transform(image_in,warp_coord):
 
 
 def robot_tracking(orig, squares):
+    head_coord = (0,0)
+    tail_coord = (0,0)
     red = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     green = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     # filter for all yellow and blue - everything else is black
-    red = colorFilterCombine(orig, "red", "red",1)
+    red = colorFilterCombine(orig, "blue", "blue",1)
     
 
     cv.Smooth(red, red, cv.CV_GAUSSIAN, 7, 7)
@@ -215,6 +217,9 @@ def robot_tracking(orig, squares):
 
     green = colorFilterCombine(orig, "green", "green",1)
     
+
+    #cv.ShowImage("green", green)
+    #cv.ShowImage("red", red)
 
     cv.Smooth(green, green, cv.CV_GAUSSIAN, 7, 7)
     
@@ -267,7 +272,6 @@ def robot_tracking(orig, squares):
                     tail_coord = (int(tail[0][0]),int(tail[0][1]) )
                     cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
                     cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
-
         try:
             cv.Circle(orig, head_coord, 5, l_red, -1, 8, 0)
 
@@ -281,4 +285,4 @@ def robot_tracking(orig, squares):
             print "fail"
 
     squares = []
-    return orig
+    return tail_coord, head_coord
