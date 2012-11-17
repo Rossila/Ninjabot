@@ -6,8 +6,8 @@ import math
 import fractions
 
 # locations of balls and obstacles
-#balls = [(449, 620), (600, 200), (250, 500), (159, 100)]
-#obstacles = [(400, 453), (286, 114), (290, 190), (588, 621)]
+balls = [(449, 620), (600, 200), (250, 500), (259, 100)]
+obstacles = [(400, 453), (286, 114), (290, 190), (588, 621)]
 
 # define colors
 d_red = cv.RGB(150, 55, 65)
@@ -22,7 +22,7 @@ travelled_paths = []
 
 ball_radius = 18
 obstacle_radius = 20
-rover_width = 40
+rover_width = 50
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
 # though it should be rover_width/2, we'll use rover_width to be on the safe side
@@ -51,19 +51,20 @@ def PathFind(bot_dir, bot_loc, balls, obstacles):
     if balls == None or len(balls) == 0:
         return next_pt
     else:
-        balls = find_closest_ball(balls, bot_loc)
+        balls = find_closest_ball(balls, bot_loc) # sort the balls in order of their distance from the robot
 
     # make sure the ball isn't too close to an obstacle for us to pick up
+    index = 0
+
     while index < len(balls):
-        index = 0
         intersections = []
-            intersections = checkIntersections(balls[0], balls[0], obstacles, intersections)
-            if len(intersections) != 0: 
-                index = index + 1
-                if index == len(balls):
-                    return next_pt # we can' get to any of these balls
-            else: # if there are no intersections, this ball is fine
-                break
+        intersections = checkIntersections(balls[index], balls[index], obstacles, intersections)
+        if len(intersections) != 0: 
+            index = index + 1
+            if index == len(balls):
+                return next_pt # we can' get to any of these balls
+        else: # if there are no intersections, this ball is fine
+            break
 
     next_pt = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
 
@@ -403,7 +404,7 @@ def check_boundaries((x,y)):
 def check_dest(bot_loc, bot_dest):
     return distance_between_points(bot_loc, bot_dest) < rover_width
 
-'''# Initialize Coordinates
+"""# Initialize Coordinates
 bot_loc = (image.shape[1]/2, rover_width)
 bot_dir = 90
 next_pt = (0,0)
@@ -416,10 +417,22 @@ for ball in balls:
 for obstacle in obstacles:
     draw_circle(obstacle_radius, obstacle[0], obstacle[1], d_green)
 
-
-index = find_closest_ball(balls, bot_loc)
+balls = find_closest_ball(balls, bot_loc)
 # FOR TESTING PURPOSES, MODIFY THIS INDEX TO CHANGE WHICH BALL TO SEARCH FOR
-index = 3
+index = 0
+
+# make sure the ball isn't too close to an obstacle for us to pick up
+print "index: ", index, "len(balls): ", len(balls)
+while index < len(balls):
+    intersections = []
+    intersections = checkIntersections(balls[index], balls[index], obstacles, intersections)
+    print intersections
+    if len(intersections) != 0: 
+        index = index + 1
+        if index == len(balls):
+            index = 0 # we can' get to any of these balls
+    else: # if there are no intersections, this ball is fine
+        break
 
 # rinse and repeat until the robot reaches its destination
 while not check_dest(bot_loc,balls[index]):
@@ -439,4 +452,4 @@ while not check_dest(bot_loc,balls[index]):
 
 cv2.imshow('Image', image)
 
-#cv.WaitKey()'''
+cv.WaitKey()"""
