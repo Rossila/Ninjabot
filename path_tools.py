@@ -6,8 +6,8 @@ import math
 import fractions
 
 # locations of balls and obstacles
-balls = [(449, 620), (600, 200), (250, 500), (259, 100)]
-obstacles = [(400, 453), (286, 114), (290, 190), (588, 621)]
+#balls = [(449, 620), (600, 200), (250, 500), (159, 100)]
+#obstacles = [(400, 453), (286, 114), (290, 190), (588, 621)]
 
 # define colors
 d_red = cv.RGB(150, 55, 65)
@@ -22,7 +22,7 @@ travelled_paths = []
 
 ball_radius = 18
 obstacle_radius = 20
-rover_width = 50
+rover_width = 40
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
 # though it should be rover_width/2, we'll use rover_width to be on the safe side
