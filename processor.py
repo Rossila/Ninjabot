@@ -118,11 +118,11 @@ def find_circles(processed, storage, LOW):
     return storage
 
 def sort_circles(storage):
-    if storage.rows <= 0 or storage.rows >= 30:
-        return
-
     balls = []
     obstacles = []
+
+    if storage.rows <= 0 or storage.rows >= 30 or storage == None:
+        return balls, obstacles
 
     circles = np.asarray(storage)
 
