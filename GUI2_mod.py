@@ -14,7 +14,8 @@ import processor
 import numpy as np
 import serial
 import path_tools
-
+import time
+import math
 #The panel containing the webcam video
 class CvDisplayPanel(wx.Panel):
     TIMER_PLAY_ID = 101 
@@ -141,7 +142,7 @@ class CvDisplayPanel(wx.Panel):
     
     def findCircles(self, mask):
         # filter for all yellow and blue - everything else is black
-        processed = processor.colorFilterCombine(mask, "yellow", "blue" ,s)
+        processed = processor.colorFilterCombine(mask, "yellow", "yellow" ,s)
         
         # Some processing and smoothing for easier circle detection
         cv.Canny(processed, processed, 5, 70, 3)
@@ -154,8 +155,10 @@ class CvDisplayPanel(wx.Panel):
         # Find&Draw circles
         processor.find_circles(processed, storage, 100)
         # robot location detection
-        combined = processor.robot_tracking(mask, squares)
-
+        tail_coord, head_coord = processor.robot_tracking(mask, squares)
+        #print "HEAD AND TAIL: ", head_coord, tail_coord
+        bot_loc = ((head_coord[0] + tail_coord[0])/2,(head_coord[1] + tail_coord[1])/2)
+        bot_dir = path_tools.line_angle(head_coord, tail_coord)
         cur_balls, cur_obstacles = processor.sort_circles(storage)
 
         if cur_balls == None or cur_obstacles == None:
@@ -177,7 +180,7 @@ class CvDisplayPanel(wx.Panel):
 
             processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
 
-            self.next_pt = path_tools.PathFind(self.veriBalls, self.veriObstacles)
+            self.next_pt = path_tools.PathFind(bot_dir, bot_loc, self.veriBalls, self.veriObstacles)
             print "next_pt: ", self.next_pt
 
             cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13,cv.RGB(150, 55, 150), 3, 8, 0)
@@ -188,7 +191,7 @@ class CvDisplayPanel(wx.Panel):
             self.CHECK_INDEX = self.CHECK_INDEX + 1
             processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
 
-            bot_loc = (800/2, 25)
+            #bot_loc = (800/2, 25)
             cv.Line(mask, (bot_loc[0], bot_loc[1]),(self.next_pt[0], self.next_pt[1]), cv.RGB(150, 55, 150), thickness=2, lineType=8, shift=0)
 
             cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13, cv.RGB(150, 55, 150), 3, 8, 0)
@@ -216,10 +219,12 @@ class CvDisplayPanel(wx.Panel):
 
 class Cameras(wx.Frame):
     """ We simply derive a new class of Frame. """
+    firstAngle = 0
+    secondAngle = 0
     def __init__(self, parent, title):
-        wx.Frame.__init__(self, parent, title=title, size=(1230,1000))
+        wx.Frame.__init__(self, parent, title=title, size=(1600,800))
         
-        self.display = wx.TextCtrl(self, -1, "YOLO",  style=wx.TE_MULTILINE, size=(400,300))
+        self.display = wx.TextCtrl(self, -1, "YOLO",  style=wx.TE_MULTILINE, size=(200,150))
         box = wx.BoxSizer(wx.VERTICAL)
         buttons = wx.GridSizer(3, 3, 1, 1)
         buttons.AddMany([(wx.Button(self, 1, 'Stop') , 0, wx.EXPAND),
@@ -287,32 +292,6 @@ class Cameras(wx.Frame):
         quit()
 
 
-    def OnUp(self, event):
-        self.display.WriteText("Sending Command: Up\n")
-        try: 
-            self.ser.write('f')
-            self.ser.flush()
-            self.display.WriteText("Command: Up Sent.\n")
-            a = self.ser.read()
-            self.ser.flush()
-            if(a == 'd'):
-                self.display.WriteText("Enter Dist")
-                try:
-                    self.ser.write('1')
-                    self.ser.flush()
-                except:
-                    self.display.WriteText("Fail.\n")
-
-            else:
-                pass    
-			
-
-        except serial.SerialException:
-            self.display.WriteText("Com Port Error.")
-
-        except AttributeError:
-            self.display.WriteText("Command: Up Failed.\n")
-
     def OnStart(self, event):
         self.display.WriteText("Sending Command: Start\n")
         try: 
@@ -321,12 +300,11 @@ class Cameras(wx.Frame):
                 baudrate=9600,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
-                bytesize=serial.EIGHTBITS
+                bytesize=serial.EIGHTBITS,
+                timeout=1
             )
-            char = self.ser.read()
-            self.ser.flush()
-            while char != 'v':
-                pass
+            
+            
             self.display.WriteText("Com Port: " + self.ser.portstr + " opened!\n")
             return self.ser
 
@@ -335,51 +313,125 @@ class Cameras(wx.Frame):
             self.ser = 0
             return self.ser
 
+
+    def OnUp(self, event):
+        self.display.WriteText("Sending Command: Forward\n")
+        try: 
+            self.ser.write('f')
+            self.ser.flush()
+            self.display.WriteText("Command: Forward Command Sent.\n")
+            time.sleep(0.05)
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            self.ser.write('5')            
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+        except AttributeError:
+            self.display.WriteText("Command: Forward Command Failed.\n")
+
+    def OnDown(self, event):
+        self.display.WriteText("Sending Command: Backward\n")
+        try: 
+            self.ser.write('b')
+            self.ser.flush()
+            self.display.WriteText("Command: Backward Command Sent.\n")
+            time.sleep(0.05)
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            self.ser.write('5')
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+
+        except AttributeError:
+            self.display.WriteText("Command: Backward Failed.\n")
+
+    #returns two variables corresponding to the arduinos turn inputs
+    #only use between 0 and 360 degrees, responds in 5 degree increments
+    def convertTurn(self, angle):
+        self.secondAngle = int(math.floor(angle/50))
+        self.firstAngle = int(math.floor((angle-50*self.secondAngle)/5))
+
+    def turn(self,angle):
+        self.display.WriteText("Sending Command: Turn \n")
+        #convertTurn()
+        try: 
+            if(angle<=0):
+                self.ser.write('l')
+                angle = angle * -1
+            else:
+                self.ser.write('r')
+            self.convertTurn(angle)
+            self.ser.flush()
+            self.display.WriteText("Command:Turn sent.\n")
+            time.sleep(0.05)
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            self.ser.write(self.firstAngle) #0-9 X5degrees
+            self.ser.flush()
+            time.sleep(0.05)
+            self.ser.write(self.secondAngle) #0-9 X50degrees
+            self.ser.flush()
+           
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+
+        except AttributeError:
+            self.display.WriteText("Command: Turn Failed.\n")
+
     def OnLeft(self, event):
-        self.display.WriteText("Sending Command: Left\n")
+        self.turn(-90)
+        
+        """self.display.WriteText("Sending Command: Turn Left\n")
         try: 
             self.ser.write('l')
             self.ser.flush()
-            self.display.WriteText("Command: Up Left.\n")
-            a = self.ser.read()
+            self.display.WriteText("Command: Left Turn sent.\n")
+            time.sleep(0.05)
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
             self.ser.flush()
-            if(a == 'a'):
-                self.display.WriteText("Enter Angle")
-                self.ser.write("1")
-                self.ser.flush()
-            else:
-                pass 
+            self.ser.write('8') #0-9 X5degrees
+            self.ser.flush()
+            time.sleep(0.05)
+            self.ser.write('1') #0-9 X50degrees
+            self.ser.flush()
 
         except serial.SerialException:
             self.display.WriteText("Com Port Error.")
 
         except AttributeError:
-            self.display.WriteText("Command: Left Failed.\n")
-
-    def OnDown(self, event):
-        self.display.WriteText("Sending Command: Down\n")
-        try: 
-            self.ser.write('s')
-            self.display.WriteText("Command: Down Sent.\n")
-
-        except serial.SerialException:
-            self.display.WriteText("Com Port Error.")
-
-        except AttributeError:
-            self.display.WriteText("Command: Down Failed.\n")
+            self.display.WriteText("Command: Left Failed.\n")"""
+        
 
     def OnRight(self, event):
-        self.display.WriteText("Sending Command: Right\n")
+        self.turn(90)
+        """
+        self.display.WriteText("Sending Command: Turn Right\n")
         try: 
-            self.ser.write('d')
-            self.display.WriteText("Command: Right Sent.\n")
+            self.ser.write('r')
+            self.ser.flush()
+            self.display.WriteText("Command: Right Turn sent.\n")
+            time.sleep(0.05)
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            self.ser.write('8') #0-9 X5degrees
+            self.ser.flush()
+            time.sleep(0.05)
+            self.ser.write('1') #0-9 X50degrees
+            self.ser.flush()
 
         except serial.SerialException:
             self.display.WriteText("Com Port Error.")
 
         except AttributeError:
             self.display.WriteText("Command: Right Failed.\n")
-
+        """
     def OnWarp(self,event):
         self.display.WriteText("Reseting Warp Perspective\n")
         global warp_coord
