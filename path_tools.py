@@ -51,7 +51,19 @@ def PathFind(balls, obstacles):
     if balls == None or len(balls) == 0:
         return next_pt
     else:
-        index = find_closest_ball(balls, bot_loc)
+        balls = find_closest_ball(balls, bot_loc)
+
+    # make sure the ball isn't too close to an obstacle for us to pick up
+    while index < len(balls):
+        index = 0
+        intersections = []
+            intersections = checkIntersections(balls[0], balls[0], obstacles, intersections)
+            if len(intersections) != 0: 
+                index = index + 1
+                if index == len(balls):
+                    return next_pt # we can' get to any of these balls
+            else: # if there are no intersections, this ball is fine
+                break
 
     next_pt = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
 
@@ -100,7 +112,7 @@ def line_angle(startPoint, endPoint):
     y2 = float(endPoint[1])
 
     if x2 - x1 == 0:
-    	angle = math.pi/2
+        angle = math.pi/2
     else:
         angle = math.atan((y2 - y1)/(x2 - x1)) #angle in radians
 
@@ -124,7 +136,7 @@ def distance_between_points(pt1, pt2):
 
 # returns the index of the closest ball in balls to the current bot_loc
 def find_closest_ball(balls, bot_loc):
-    min_index = 0
+    """min_index = 0
     dist = 0
     shortest_dist = distance_between_points(balls[0], bot_loc)
     for index, ball in enumerate(balls):
@@ -132,9 +144,9 @@ def find_closest_ball(balls, bot_loc):
         #print "distance index: ", index, "distance: ", dist
         if dist < shortest_dist:
             shortest_dist = dist
-            min_index = index
-
-    return min_index
+            min_index = index"""
+    sorted_balls = sorted(balls, key=lambda distance: distance_between_points(distance, bot_loc))
+    return sorted_balls
 
 # returns true if the line segment from ln1_start to ln1_end
 # intersects with the line segment from ln2_start to ln2_end
