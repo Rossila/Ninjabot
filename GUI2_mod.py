@@ -231,6 +231,8 @@ class Cameras(wx.Frame):
     """ We simply derive a new class of Frame. """
     firstAngle = 0
     secondAngle = 0
+    firstStraight = 0
+    secondStraight = 0
     display1 = None
     next_pt = (0,0)
     sync = 0 # a variable between 0 and 50 used to ensure pathfinding waits for image processing
@@ -320,7 +322,7 @@ class Cameras(wx.Frame):
         try: 
 
             self.ser = serial.Serial(
-                port='COM17',
+                port='COM16',
                 baudrate=9600,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
@@ -351,7 +353,7 @@ class Cameras(wx.Frame):
             self.next_pt, angle, distance, ball_loc = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
             self.state = 1 # state 1 indicates the robot is currently travelling to its next point
             a = self.turn(angle)
-            a = self.move(int(distance/15))
+            a = self.move(int(distance*16))     #16 is the correct value
             if path_tools.check_dest(self.display1.bot_loc, ball_loc): # check if robot has reached a ball
                 self.state = 2
             else:
@@ -362,7 +364,7 @@ class Cameras(wx.Frame):
         self.turn(angle)
 
     def OnUp(self, event):
-        self.move(9)
+        self.move(1000)
         """
         self.display.WriteText("Sending Command: Forward\n")
         try: 
@@ -381,7 +383,7 @@ class Cameras(wx.Frame):
             self.display.WriteText("Command: Forward Command Failed.\n")"""
 
     def OnDown(self, event):
-        self.move(-9)
+        self.move(-1000)
         """
         self.display.WriteText("Sending Command: Backward\n")
         try: 
@@ -403,26 +405,45 @@ class Cameras(wx.Frame):
     #returns two variables corresponding to the arduinos turn inputs
     #only use between 0 and 360 degrees, responds in 5 degree increments
     def convertTurn(self, angle):
+        if (angle > 180):
+            angle = 180
         self.secondAngle = int(math.floor(angle/50))
         self.firstAngle = int(math.floor((angle-50*self.secondAngle)/5))
 
+    def convertStraight(self, distance):
+        if (distance > 9900):
+            distance = 9900
+        self.secondStraight = int(math.floor(distance/1000))
+        self.firstStraight = int(math.floor((distance-1000*self.secondStraight)/100))
+
     def move(self,distance):
-        self.display.WriteText("Sending Command: Move")
+
+        self.display.WriteText("Sending Command: Move " + str(distance) + "\n")
         try: 
             if(distance<=0):
                 self.ser.write('b')
                 distance = distance * -1
             else:
                 self.ser.write('f')
-
+            self.convertStraight(distance)
             self.ser.flush()
-            self.display.WriteText("Command: Forward Command Sent.\n")
+            self.display.WriteText("Command: Forward. 100: " + str(self.firstStraight) + " 1000: " + str(self.secondStraight))
             time.sleep(0.05)
             a = self.ser.read(20)
             self.display.WriteText(a + "\n")
             self.ser.flush()
             time.sleep(0.05)
-            self.ser.write(distance)
+            self.ser.write(self.firstStraight)  #100 increments
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            time.sleep(0.05)
+            self.ser.write(self.secondStraight) #1000 increments
+            self.ser.flush()
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            time.sleep(0.05)
+            self.ser.flush()
+            return a
             """self.ser.flush()
             a = self.ser.read(20)
             self.display.WriteText(a + "\n")
@@ -435,7 +456,7 @@ class Cameras(wx.Frame):
             self.display.WriteText("Command: Forward Command Failed.\n")
 
     def turn(self,angle):
-        self.display.WriteText("Sending Command: Turn \n")
+        self.display.WriteText("Sending Command: Turn " + str(angle) + "\n")
         #convertTurn()
         try: 
             if(angle<=0):
@@ -452,11 +473,13 @@ class Cameras(wx.Frame):
             self.ser.flush()
             self.ser.write(self.firstAngle) #0-9 X5degrees
             self.ser.flush()
+            self.display.WriteText(a + "\n")
             time.sleep(0.05)
             self.ser.write(self.secondAngle) #0-9 X50degrees
             self.ser.flush()
             a = self.ser.read(20)
             self.display.WriteText(a + "\n")
+            time.sleep(0.05)
             self.ser.flush()
             return a
            
