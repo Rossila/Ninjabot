@@ -9,10 +9,43 @@ class ColorFilter(wx.Frame):
     global green
     global yellow
 
+    
+    f = open('setting.txt', 'r')
+
+    try :
+        filter_storage = eval(f.readline())
+        red =  filter_storage[2]
+        blue =  filter_storage[3]
+        green = filter_storage[4]
+        yellow = filter_storage[5]
+
+        
+    except:
+
+        red =  [(160, 70,70), (180, 255, 255)]
+        blue =  [(100, 100, 100), (120,255,255)]
+        green = [(70, 70, 70), (80, 255, 255)]
+        yellow = [(20, 70, 70), (60, 255, 255)] 
+
+
+    
+
+    """
+    f.write("warp_coord= " + str(warp_coord) + "\n")
+    f.write("warp_coord2= " + str(warp_coord2) + "\n")
+    f.write("colorfilter.red= " + str(colorfilter.red) + "\n")
+    f.write("colorfilter.blue= " + str(colorfilter.blue) + "\n")
+    f.write("colorfilter.green= " + str(colorfilter.green) + "\n")
+    f.write("colorfilter.yellow= " + str(colorfilter.yellow) + "\n")
+    """
+    f.close()
+
+    """
     red =  [(160, 70,70), (180, 255, 255)]
     blue =  [(100, 100, 100), (120,255,255)]
     green = [(70, 70, 70), (80, 255, 255)]
     yellow = [(20, 70, 70), (60, 255, 255)]
+    """
 
            
     def __init__(self, *args, **kw):
