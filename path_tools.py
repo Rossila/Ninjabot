@@ -22,7 +22,7 @@ travelled_paths = []
 
 ball_radius = 18
 obstacle_radius = 20
-rover_width = 50
+rover_width = 40
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
 # though it should be rover_width/2, we'll use rover_width to be on the safe side

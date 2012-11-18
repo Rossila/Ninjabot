@@ -32,6 +32,8 @@ class CvDisplayPanel(wx.Panel):
 
     mask = None
 
+    sync = 0
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -188,7 +190,11 @@ class CvDisplayPanel(wx.Panel):
             print "next_pt: ", self.next_pt
 
             cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13,cv.RGB(150, 55, 150), 3, 8, 0)
-
+            
+            self.sync = self.sync + 1 # sync is a variable between 0 and 50 used to ensure path finding waits for the image processing
+            if self.sync > 50:
+                self.sync = 0
+            
             self.balls = []
             self.obstacles = []
         else:
@@ -227,6 +233,7 @@ class Cameras(wx.Frame):
     secondAngle = 0
     display1 = None
     next_pt = (0,0)
+    sync = 0 # a variable between 0 and 50 used to ensure pathfinding waits for image processing
     state = -1 #-1: auto not started, 0: find next position, #1: move to next position, #2: catch ball
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=(1600,800))
@@ -286,7 +293,7 @@ class Cameras(wx.Frame):
         TIMER_ID = 100
         self.timer = wx.Timer(self, TIMER_ID) 
         wx.EVT_TIMER(self, TIMER_ID, self.onNextFrame2)
-        self.timer.Start(4000)
+        self.timer.Start(1000)
 
     def OnExit(self,evt):
         self.Close(True)  # Close the frame.
@@ -335,6 +342,11 @@ class Cameras(wx.Frame):
 
     def onNextFrame2(self, evt):
         print "CURRENT STATE: ", self.state
+
+        if self.sync == self.display1.sync: # image processing hasnt't been updated, do not send any commands
+            return
+        else:
+            self.sync = self.display1.sync
         if self.state == 0: # state 0 is find and send the command to move towards the closest ball
             self.next_pt, angle, distance, ball_loc = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
             self.state = 1 # state 1 indicates the robot is currently travelling to its next point
