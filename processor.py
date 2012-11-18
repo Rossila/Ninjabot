@@ -2,6 +2,7 @@ import cv2.cv as cv
 import cv2
 import sys
 import numpy as np
+import colorfilter
 
 d_red = cv.RGB(150, 55, 65)
 l_red = cv.RGB(250, 200, 200)
@@ -42,6 +43,7 @@ def colorFilter(img, color, calibrate):
     imgHSV = cv.CreateImage(cv.GetSize(img),8,3)
     cv.CvtColor(img, imgHSV, cv.CV_BGR2HSV)
 
+    """
     if color == "yellow":
         minColor = cv.Scalar(20, 70, 70)
         maxColor = cv.Scalar(60, 255, 255)
@@ -57,10 +59,11 @@ def colorFilter(img, color, calibrate):
     elif color == "calibrate":
          minColor = cv.Scalar(calibrate[0],calibrate[1],calibrate[2])
          maxColor = minColor
+    """
 
     imgFiltered = cv.CreateImage(cv.GetSize(img),8,1)
 
-    cv.InRangeS(imgHSV, minColor, maxColor, imgFiltered)
+    cv.InRangeS(imgHSV, color[0], color[1], imgFiltered)
 
     return imgFiltered
 
@@ -201,34 +204,34 @@ def perspective_transform(image_in,warp_coord):
 
 
 def robot_tracking(orig, squares):
+    red = colorfilter.red
+    blue = colorfilter.blue
+    green = colorfilter.green
+    yellow = colorfilter.yellow
     head_coord = (0,0)
     tail_coord = (0,0)
-    red = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
-    green = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
+    robo_tail = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
+    robo_head = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     # filter for all yellow and blue - everything else is black
-    red = colorFilterCombine(orig, "blue", "blue",1)
+    robo_tail = colorFilterCombine(orig, blue, blue,1)
     
 
-    cv.Smooth(red, red, cv.CV_GAUSSIAN, 7, 7)
+    cv.Smooth(robo_tail, robo_tail, cv.CV_GAUSSIAN, 7, 7)
     
     
-    red_np = np.asarray(red[:,:])
-    contours_red, hierarchy = cv2.findContours(red_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    robo_tail_np = np.asarray(robo_tail[:,:])
+    contours_robo_tail, hierarchy = cv2.findContours(robo_tail_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    green = colorFilterCombine(orig, "green", "green",1)
+    robo_head = colorFilterCombine(orig, green, green,1)
     
-
-    #cv.ShowImage("green", green)
-    #cv.ShowImage("red", red)
-
-    cv.Smooth(green, green, cv.CV_GAUSSIAN, 7, 7)
+    cv.Smooth(robo_head, robo_head, cv.CV_GAUSSIAN, 7, 7)
     
 
     
-    green_np = np.asarray(green[:,:])
-    contours_green, hierarchy = cv2.findContours(green_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    robo_head_np = np.asarray(robo_head[:,:])
+    contours_robo_head, hierarchy = cv2.findContours(robo_head_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    for cnt in contours_red:
+    for cnt in contours_robo_tail:
         if cv2.contourArea(cnt) >= 1000:
 
             moments = cv2.moments(cnt)
@@ -237,9 +240,9 @@ def robot_tracking(orig, squares):
                                   moments['m01']/moments['m00']); 
             
             #if massCenterModel
-            squares.append((massCenterModel,"red"))
+            squares.append((massCenterModel,"robo_tail"))
 
-    for cnt in contours_green:
+    for cnt in contours_robo_head:
         if cv2.contourArea(cnt) >= 1000:
 
             moments = cv2.moments(cnt)
@@ -248,27 +251,27 @@ def robot_tracking(orig, squares):
                                   moments['m01']/moments['m00']); 
             
 
-            squares.append((massCenterModel,"green"))
+            squares.append((massCenterModel,"robo_head"))
     #print squares
     while squares:
         head = squares.pop()
 
-        if (head[1] == "red"):
+        if (head[1] == "robo_tail"):
             tail_coord = (int(head[0][0]),int(head[0][1]) )
             cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
             if (squares != []):
                 tail = squares.pop()
-                if(tail[1]== "green"):
+                if(tail[1]== "robo_head"):
                     head_coord = (int(tail[0][0]),int(tail[0][1]))
                     cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
                     cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
 
-        if (head[1] == "green"):
+        if (head[1] == "robo_head"):
             head_coord = (int(head[0][0]),int(head[0][1]))
             cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
             if (squares != []):
                 tail = squares.pop()
-                if(tail[1]== "red"):
+                if(tail[1]== "robo_tail"):
                     tail_coord = (int(tail[0][0]),int(tail[0][1]) )
                     cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
                     cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)

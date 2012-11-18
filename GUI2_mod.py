@@ -16,6 +16,7 @@ import serial
 import path_tools
 import time
 import math
+import colorfilter
 #The panel containing the webcam video
 class CvDisplayPanel(wx.Panel):
     TIMER_PLAY_ID = 101 
@@ -147,8 +148,12 @@ class CvDisplayPanel(wx.Panel):
         return sorted_list
     
     def findCircles(self, mask):
+        red = colorfilter.red
+        blue = colorfilter.blue
+        green = colorfilter.green
+        yellow = colorfilter.yellow
         # filter for all yellow and blue - everything else is black
-        processed = processor.colorFilterCombine(mask, "yellow", "yellow" ,s)
+        processed = processor.colorFilterCombine(mask, yellow, yellow ,s)
         
         # Some processing and smoothing for easier circle detection
         cv.Canny(processed, processed, 5, 70, 3)
@@ -250,7 +255,8 @@ class Cameras(wx.Frame):
                         (wx.Button(self, 5, 'Down') , 0, wx.EXPAND),
                         (wx.Button(self, 6, 'Right') , 0, wx.EXPAND),
                         (wx.Button(self, 7, 'Warp') , 0, wx.EXPAND),
-                        (wx.Button(self, 8, 'Auto') , 0, wx.EXPAND)])
+                        (wx.Button(self, 8, 'Auto') , 0, wx.EXPAND),
+                        (wx.Button(self, 9, 'Color') , 0, wx.EXPAND)])
         box.Add(self.display, 1, wx.EXPAND)
         box.Add(buttons, 1, wx.EXPAND)
 
@@ -276,6 +282,7 @@ class Cameras(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnRight, id=6)
         self.Bind(wx.EVT_BUTTON, self.OnWarp, id=7)
         self.Bind(wx.EVT_BUTTON, self.onAuto, id=8)
+        self.Bind(wx.EVT_BUTTON, self.OnColor, id=9)
 
         self.CreateStatusBar() # A Statusbar in the bottom of the window
 
@@ -495,6 +502,11 @@ class Cameras(wx.Frame):
     def OnRight(self, event):
         self.turn(90)
         
+    def OnColor(self,event):
+       
+        popup = colorfilter.ColorFilter(frame) # A Frame is a top-level window.
+        popup.Show(True)
+
     def OnWarp(self,event):
         self.display.WriteText("Reseting Warp Perspective\n")
         global warp_coord
