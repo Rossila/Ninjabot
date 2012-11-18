@@ -169,7 +169,7 @@ class CvDisplayPanel(wx.Panel):
         tail_coord, head_coord = processor.robot_tracking(mask, squares)
         #print "HEAD AND TAIL: ", head_coord, tail_coord
         self.bot_loc = ((head_coord[0] + tail_coord[0])/2,(head_coord[1] + tail_coord[1])/2)
-        self.bot_dir = path_tools.line_angle(head_coord, tail_coord)
+        self.bot_dir = path_tools.line_angle(tail_coord, head_coord)
         cur_balls, cur_obstacles = processor.sort_circles(storage)
 
         if cur_balls == None or cur_obstacles == None:
