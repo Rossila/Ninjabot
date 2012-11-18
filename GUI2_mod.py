@@ -307,7 +307,23 @@ class Cameras(wx.Frame):
     def OnExit(self,evt):
         self.Close(True)  # Close the frame.
 
+    def save(self):
+        f = open('setting.txt', 'w')
+
+        """
+        f.write("warp_coord = " + str(warp_coord) +"\n")
+        f.write("warp_coord2 = " + str(warp_coord2) +"\n")
+        f.write("colorfilter.red = " + str(colorfilter.red) +"\n")
+        f.write("colorfilter.blue = " + str(colorfilter.blue) +"\n")
+        f.write("colorfilter.green = " + str(colorfilter.green) +"\n")
+        f.write("colorfilter.yellow = " + str(colorfilter.yellow) +"\n")
+        """
+        output = [np.array(warp_coord)[:].tolist(),np.array(warp_coord2)[:].tolist(),colorfilter.red,colorfilter.blue,colorfilter.green,colorfilter.yellow]
+        f.write(str(output))
+        f.close()
+
     def OnStop(self, event):
+        self.save()
         self.display.WriteText("Sending Command: Stop\n")
         #print('Com Port: ' + self.ser.portstr + ' closed')
         try: 
@@ -587,9 +603,21 @@ x_co = 0
 warp_coord = np.array([], np.float32)
 warp_coord2 = np.array([], np.float32)
 
-warp_coord = [[0,0],[orig.width, 0],[0, orig.height],[orig.width, orig.height]]
+f = open('setting.txt', 'r')
 
-warp_coord2 = [[0,0],[orig2.width, 0],[0, orig2.height],[orig2.width, orig2.height]]
+try :
+    filter_storage = eval(f.readline())
+    warp_coord =  filter_storage[0]
+    warp_coord2 =  filter_storage[1]
+
+except:
+
+    warp_coord = [[0,0],[orig.width, 0],[0, orig.height],[orig.width, orig.height]]
+
+    warp_coord2 = [[0,0],[orig2.width, 0],[0, orig2.height],[orig2.width, orig2.height]] 
+
+
+
 
 font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, 1, 0, 2, 8)
 
