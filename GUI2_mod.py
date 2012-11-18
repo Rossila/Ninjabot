@@ -27,6 +27,10 @@ class CvDisplayPanel(wx.Panel):
     veriObstacles = []
 
     next_pt = (0,0)
+    bot_loc = (0,0)
+    bot_dir = 90
+
+    mask = None
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -37,10 +41,10 @@ class CvDisplayPanel(wx.Panel):
         # reduce flickering
         self.SetCompositeMode(True)
 
-        mask = self.CombineCaptures()
+        self.mask = self.CombineCaptures()
         
         # display image
-        self.bmp = wx.BitmapFromBuffer(mask.width, mask.height, mask.tostring())
+        self.bmp = wx.BitmapFromBuffer(self.mask.width, self.mask.height, self.mask.tostring())
         sbmp = wx.StaticBitmap(self, -1, bitmap=self.bmp) # Display the resulting image
 
         # set up event timer to update image
@@ -157,8 +161,8 @@ class CvDisplayPanel(wx.Panel):
         # robot location detection
         tail_coord, head_coord = processor.robot_tracking(mask, squares)
         #print "HEAD AND TAIL: ", head_coord, tail_coord
-        bot_loc = ((head_coord[0] + tail_coord[0])/2,(head_coord[1] + tail_coord[1])/2)
-        bot_dir = path_tools.line_angle(head_coord, tail_coord)
+        self.bot_loc = ((head_coord[0] + tail_coord[0])/2,(head_coord[1] + tail_coord[1])/2)
+        self.bot_dir = path_tools.line_angle(head_coord, tail_coord)
         cur_balls, cur_obstacles = processor.sort_circles(storage)
 
         if cur_balls == None or cur_obstacles == None:
@@ -180,7 +184,7 @@ class CvDisplayPanel(wx.Panel):
 
             processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
 
-            self.next_pt = path_tools.PathFind(bot_dir, bot_loc, self.veriBalls, self.veriObstacles)
+            self.next_pt, turn, distance, ball_loc = path_tools.PathFind(self.bot_dir, self.bot_loc, self.veriBalls, self.veriObstacles)
             print "next_pt: ", self.next_pt
 
             cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13,cv.RGB(150, 55, 150), 3, 8, 0)
@@ -192,7 +196,7 @@ class CvDisplayPanel(wx.Panel):
             processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
 
             #bot_loc = (800/2, 25)
-            cv.Line(mask, (bot_loc[0], bot_loc[1]),(self.next_pt[0], self.next_pt[1]), cv.RGB(150, 55, 150), thickness=2, lineType=8, shift=0)
+            cv.Line(mask, (self.bot_loc[0], self.bot_loc[1]),(self.next_pt[0], self.next_pt[1]), cv.RGB(150, 55, 150), thickness=2, lineType=8, shift=0)
 
             cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13, cv.RGB(150, 55, 150), 3, 8, 0)
 
@@ -206,13 +210,13 @@ class CvDisplayPanel(wx.Panel):
 
     # update image each frame
     def onNextFrame(self, evt):
-        mask = self.CombineCaptures() # get combined image from webcams
+        self.mask = self.CombineCaptures() # get combined image from webcams
 
-        mask = self.findCircles(mask) # find & draw circles using image processing
+        self.mask = self.findCircles(self.mask) # find & draw circles using image processing
 
-        if mask:
-            cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
-            self.bmp.CopyFromBuffer(mask.tostring()) # update the bitmap to the current frame
+        if self.mask:
+            cv.CvtColor(self.mask, self.mask, cv.CV_BGR2RGB)
+            self.bmp.CopyFromBuffer(self.mask.tostring()) # update the bitmap to the current frame
             self.Refresh() # display the current frame
         evt.Skip()
 
@@ -221,6 +225,9 @@ class Cameras(wx.Frame):
     """ We simply derive a new class of Frame. """
     firstAngle = 0
     secondAngle = 0
+    display1 = None
+    next_pt = (0,0)
+    state = -1 #-1: auto not started, 0: find next position, #1: move to next position, #2: catch ball
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=(1600,800))
         
@@ -233,13 +240,15 @@ class Cameras(wx.Frame):
                         (wx.Button(self, 4, 'Left') , 0, wx.EXPAND),
                         (wx.Button(self, 5, 'Down') , 0, wx.EXPAND),
                         (wx.Button(self, 6, 'Right') , 0, wx.EXPAND),
-                        (wx.Button(self, 7, 'Warp') , 0, wx.EXPAND)])
+                        (wx.Button(self, 7, 'Warp') , 0, wx.EXPAND),
+                        (wx.Button(self, 8, 'Auto') , 0, wx.EXPAND)])
         box.Add(self.display, 1, wx.EXPAND)
         box.Add(buttons, 1, wx.EXPAND)
 
         right = wx.BoxSizer(wx.VERTICAL)
-        display1 = CvDisplayPanel(self)
-        right.Add(display1, 1, wx.EXPAND , 0)
+        self.display1 = CvDisplayPanel(self)
+
+        right.Add(self.display1, 1, wx.ALL , 0)
 
         left = wx.BoxSizer(wx.HORIZONTAL)
         
@@ -257,6 +266,7 @@ class Cameras(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnDown, id=5)
         self.Bind(wx.EVT_BUTTON, self.OnRight, id=6)
         self.Bind(wx.EVT_BUTTON, self.OnWarp, id=7)
+        self.Bind(wx.EVT_BUTTON, self.onAuto, id=8)
 
         self.CreateStatusBar() # A Statusbar in the bottom of the window
 
@@ -264,7 +274,7 @@ class Cameras(wx.Frame):
 
         # wx.ID_EXIT is a standard ID provided by wxWidgets.
         filemenu.AppendSeparator()
-        menuExit=filemenu.Append(wx.ID_EXIT,"E&xit"," Terminate the program")
+        menuExit=filemenu.Append(wx.ID_EXIT,"Exit"," Terminate the program")
 
         # events for the menu bar
         self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
@@ -273,6 +283,11 @@ class Cameras(wx.Frame):
         menuBar.Append(filemenu,"&File") # Adding the "filemenu" to the MenuBar
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
 
+        TIMER_ID = 100
+        self.timer = wx.Timer(self, TIMER_ID) 
+        wx.EVT_TIMER(self, TIMER_ID, self.onNextFrame2)
+        self.timer.Start(4000)
+
     def OnExit(self,evt):
         self.Close(True)  # Close the frame.
 
@@ -280,6 +295,7 @@ class Cameras(wx.Frame):
         self.display.WriteText("Sending Command: Stop\n")
         #print('Com Port: ' + self.ser.portstr + ' closed')
         try: 
+            self.ser.write('h')
             self.ser.close
             self.display.WriteText("Com Port: " + self.ser.portstr + " closed\n")
 
@@ -295,8 +311,9 @@ class Cameras(wx.Frame):
     def OnStart(self, event):
         self.display.WriteText("Sending Command: Start\n")
         try: 
+
             self.ser = serial.Serial(
-                port='\\.\COM7',
+                port='COM17',
                 baudrate=9600,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
@@ -313,8 +330,28 @@ class Cameras(wx.Frame):
             self.ser = 0
             return self.ser
 
+    def onAuto(self, event):
+        self.state = 0 
+
+    def onNextFrame2(self, evt):
+        print "CURRENT STATE: ", self.state
+        if self.state == 0: # state 0 is find and send the command to move towards the closest ball
+            self.next_pt, angle, distance, ball_loc = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
+            self.state = 1 # state 1 indicates the robot is currently travelling to its next point
+            a = self.turn(angle)
+            a = self.move(int(distance/15))
+            if path_tools.check_dest(self.display1.bot_loc, ball_loc): # check if robot has reached a ball
+                self.state = 2
+            else:
+                self.state = 0
+
+            
+    def turnAndMove(self, angle, distance):
+        self.turn(angle)
 
     def OnUp(self, event):
+        self.move(9)
+        """
         self.display.WriteText("Sending Command: Forward\n")
         try: 
             self.ser.write('f')
@@ -329,9 +366,11 @@ class Cameras(wx.Frame):
         except serial.SerialException:
             self.display.WriteText("Com Port Error.")
         except AttributeError:
-            self.display.WriteText("Command: Forward Command Failed.\n")
+            self.display.WriteText("Command: Forward Command Failed.\n")"""
 
     def OnDown(self, event):
+        self.move(-9)
+        """
         self.display.WriteText("Sending Command: Backward\n")
         try: 
             self.ser.write('b')
@@ -347,13 +386,41 @@ class Cameras(wx.Frame):
             self.display.WriteText("Com Port Error.")
 
         except AttributeError:
-            self.display.WriteText("Command: Backward Failed.\n")
+            self.display.WriteText("Command: Backward Failed.\n")"""
 
     #returns two variables corresponding to the arduinos turn inputs
     #only use between 0 and 360 degrees, responds in 5 degree increments
     def convertTurn(self, angle):
         self.secondAngle = int(math.floor(angle/50))
         self.firstAngle = int(math.floor((angle-50*self.secondAngle)/5))
+
+    def move(self,distance):
+        self.display.WriteText("Sending Command: Move")
+        try: 
+            if(distance<=0):
+                self.ser.write('b')
+                distance = distance * -1
+            else:
+                self.ser.write('f')
+
+            self.ser.flush()
+            self.display.WriteText("Command: Forward Command Sent.\n")
+            time.sleep(0.05)
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            time.sleep(0.05)
+            self.ser.write(distance)
+            """self.ser.flush()
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            return a            """
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+        except AttributeError:
+            self.display.WriteText("Command: Forward Command Failed.\n")
 
     def turn(self,angle):
         self.display.WriteText("Sending Command: Turn \n")
@@ -376,6 +443,10 @@ class Cameras(wx.Frame):
             time.sleep(0.05)
             self.ser.write(self.secondAngle) #0-9 X50degrees
             self.ser.flush()
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            return a
            
         except serial.SerialException:
             self.display.WriteText("Com Port Error.")
@@ -385,53 +456,10 @@ class Cameras(wx.Frame):
 
     def OnLeft(self, event):
         self.turn(-90)
-        
-        """self.display.WriteText("Sending Command: Turn Left\n")
-        try: 
-            self.ser.write('l')
-            self.ser.flush()
-            self.display.WriteText("Command: Left Turn sent.\n")
-            time.sleep(0.05)
-            a = self.ser.read(20)
-            self.display.WriteText(a + "\n")
-            self.ser.flush()
-            self.ser.write('8') #0-9 X5degrees
-            self.ser.flush()
-            time.sleep(0.05)
-            self.ser.write('1') #0-9 X50degrees
-            self.ser.flush()
-
-        except serial.SerialException:
-            self.display.WriteText("Com Port Error.")
-
-        except AttributeError:
-            self.display.WriteText("Command: Left Failed.\n")"""
-        
 
     def OnRight(self, event):
         self.turn(90)
-        """
-        self.display.WriteText("Sending Command: Turn Right\n")
-        try: 
-            self.ser.write('r')
-            self.ser.flush()
-            self.display.WriteText("Command: Right Turn sent.\n")
-            time.sleep(0.05)
-            a = self.ser.read(20)
-            self.display.WriteText(a + "\n")
-            self.ser.flush()
-            self.ser.write('8') #0-9 X5degrees
-            self.ser.flush()
-            time.sleep(0.05)
-            self.ser.write('1') #0-9 X50degrees
-            self.ser.flush()
-
-        except serial.SerialException:
-            self.display.WriteText("Com Port Error.")
-
-        except AttributeError:
-            self.display.WriteText("Command: Right Failed.\n")
-        """
+        
     def OnWarp(self,event):
         self.display.WriteText("Reseting Warp Perspective\n")
         global warp_coord
@@ -553,9 +581,9 @@ def on_mouse2(event,x,y,flag,param):
 
 app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
 frame = Cameras(None, "Cameras") # A Frame is a top-level window.
+
 frame.Show(True)     # Show the frame.
 
 #frame2 = Control(None, "Control") # A Frame is a top-level window.
 #frame2.Show(True) 
-
 app.MainLoop()

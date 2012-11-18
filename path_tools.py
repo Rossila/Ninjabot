@@ -22,13 +22,13 @@ travelled_paths = []
 
 ball_radius = 18
 obstacle_radius = 20
-rover_width = 40
+rover_width = 50
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
 # though it should be rover_width/2, we'll use rover_width to be on the safe side
 avoid_radius = obstacle_radius + rover_width
 
-TRAV_UNIT = 40
+TRAV_UNIT = 15
 TURN_ANGLE = 5
 
 FIELD_WIDTH = 800
@@ -38,7 +38,7 @@ image = cv2.imread('empty.jpg')
 
 def PathFind(bot_dir, bot_loc, balls, obstacles):
     #bot_loc = (FIELD_WIDTH/2, rover_width)
-    bot_dir = 90
+    #bot_dir = 90
     next_pt = (0,0)
     last_pt = bot_loc
 
@@ -66,9 +66,9 @@ def PathFind(bot_dir, bot_loc, balls, obstacles):
         else: # if there are no intersections, this ball is fine
             break
 
-    next_pt = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
+    next_pt, turn, distance = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
 
-    return next_pt
+    return next_pt, turn, distance, balls[index]
 
 def draw_line(start, end, color):
     cv2.line(image, start, end, color, thickness = 1, lineType=8, shift=0)
@@ -323,6 +323,11 @@ def robotTravel(bot_dir, bot_loc, next_pt):
     # neg degrees are ccw
     # pos degrees are cw
     turn = angle - bot_dir
+    if turn > 180:
+        turn = -1* (360 - 180)
+    elif turn < -180:
+        turn = 360 + 180
+
     # get the closest value divisible by TURN_ANGLE
     turn = int(turn/TURN_ANGLE) * TURN_ANGLE
     distance = distance_between_points(bot_loc, next_pt)
@@ -331,9 +336,9 @@ def robotTravel(bot_dir, bot_loc, next_pt):
 
     angle = int(bot_dir + turn)
 
-    print "bot_loc: ", bot_loc, "angle: ", angle, "distance: ", distance
+    print "bot_loc: ", bot_loc, "turn: ", turn, "distance: ", distance, "we want it to move from angle: ", angle - turn, "to angle: ", angle 
     print "ROBOT DIRECTIONS: turn", turn, "move forward", distance
-    return draw_line_polar(bot_loc, angle, distance) # return the end point
+    return draw_line_polar(bot_loc, angle, distance), turn, distance # return the end point
 
 # Finds the next point that the robot should travel to
 # Creates a list of Point of interests and finds one that is possible
@@ -393,8 +398,8 @@ def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir):
     draw_circle(4, next_pt[0], next_pt[1], d_red)
 
     # estimates where the robot will actually go
-    next_pt = robotTravel(bot_dir, bot_loc, next_pt) # adjust the path
-    return next_pt
+    next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt) # adjust the path
+    return next_pt, turn, distance
 
 # check if this point will hit the edge of the field
 def check_boundaries((x,y)):
