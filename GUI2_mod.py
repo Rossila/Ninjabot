@@ -659,13 +659,30 @@ class Cameras(wx.Frame):
                 cur_pos = "goal"
 
             orig = cv.QueryFrame(capture1)
-            
+            temp1 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
+            cv.Resize(orig, temp1)
+                
             cv.SetMouseCallback("calibrate_image1",on_mouse, 0);
-            print "trying.."
 
-            cv.PutText(orig, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
-            cv.ShowImage('calibrate_image1', orig)
+            if len(warp_coord) < 4:
+                
+                #print "trying.."
+
+                cv.PutText(temp1, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
+                cv.ShowImage('calibrate_image1', temp1)
+            else:
+                #temp1 = cv.QueryFrame(capture1)
             
+                #cv.SetMouseCallback("calibrate_image1",on_mouse, 0);
+                #print "trying.."
+
+                try:
+                    warp1 = processor.perspective_transform(temp1, warp_coord)
+                except:
+
+                    warp1 = temp1   
+                cv.PutText(warp1, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
+                cv.ShowImage('calibrate_image1',warp1)
             if cv.WaitKey(10) == 27:
                 break
 
@@ -686,12 +703,30 @@ class Cameras(wx.Frame):
                 cur_pos = "goal"
 
             orig2 = cv.QueryFrame(capture2)
-            
+            temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
+            cv.Resize(orig2, temp2)
+                
             cv.SetMouseCallback("calibrate_image2",on_mouse2, 0);
-            print "trying.."
 
-            cv.PutText(orig2, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
-            cv.ShowImage('calibrate_image2', orig2)
+            if len(warp_coord2) < 4:
+                
+                #print "trying.."
+
+                cv.PutText(temp2, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
+                cv.ShowImage('calibrate_image2', temp2)
+            else:
+                #temp2 = cv.QueryFrame(capture1)
+            
+                #cv.SetMouseCallback("calibrate_image1",on_mouse, 0);
+                #print "trying.."
+
+                try:
+                    warp2 = processor.perspective_transform(temp2, warp_coord2)
+                except:
+
+                    warp2 = temp2   
+                cv.PutText(warp2, cur_pos + " " + str(x_co) + "," + str(y_co),(x_co,y_co), font, (55, 25, 255))
+                cv.ShowImage('calibrate_image2',warp2)
             
             if cv.WaitKey(10) == 27:
                 break
@@ -732,6 +767,8 @@ try :
     warp_coord2 =  filter_storage[1]
     goal1 = filter_storage[0][4]
     goal2 = filter_storage[1][4]
+    goal2 = [goal2[0],goal2[1]+400]
+
 
 except:
 
