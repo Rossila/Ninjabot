@@ -324,7 +324,7 @@ class Cameras(wx.Frame):
         TIMER_ID = 100
         self.timer = wx.Timer(self, TIMER_ID) 
         wx.EVT_TIMER(self, TIMER_ID, self.onNextFrame2)
-        self.timer.Start(4000)
+        self.timer.Start(1000)
 
     def OnExit(self,evt):
         self.Close(True)  # Close the frame.
@@ -332,14 +332,6 @@ class Cameras(wx.Frame):
     def save(self):
         f = open('setting.txt', 'w')
 
-        """
-        f.write("warp_coord = " + str(warp_coord) +"\n")
-        f.write("warp_coord2 = " + str(warp_coord2) +"\n")
-        f.write("colorfilter.red = " + str(colorfilter.red) +"\n")
-        f.write("colorfilter.blue = " + str(colorfilter.blue) +"\n")
-        f.write("colorfilter.green = " + str(colorfilter.green) +"\n")
-        f.write("colorfilter.yellow = " + str(colorfilter.yellow) +"\n")
-        """
         output = [np.array(warp_coord)[:].tolist(),np.array(warp_coord2)[:].tolist(),colorfilter.red,colorfilter.blue,colorfilter.green,colorfilter.yellow]
         f.write(str(output))
         f.close()
@@ -349,15 +341,6 @@ class Cameras(wx.Frame):
         if self.pause == 1:
 
             f = open('log.txt', 'w')
-
-            """
-            f.write("warp_coord = " + str(warp_coord) +"\n")
-            f.write("warp_coord2 = " + str(warp_coord2) +"\n")
-            f.write("colorfilter.red = " + str(colorfilter.red) +"\n")
-            f.write("colorfilter.blue = " + str(colorfilter.blue) +"\n")
-            f.write("colorfilter.green = " + str(colorfilter.green) +"\n")
-            f.write("colorfilter.yellow = " + str(colorfilter.yellow) +"\n")
-            """
             #output = [np.array(warp_coord)[:].tolist(),np.array(warp_coord2)[:].tolist(),colorfilter.red,colorfilter.blue,colorfilter.green,colorfilter.yellow]
             f.write(str(self.display.GetValue()))
 
@@ -412,7 +395,7 @@ class Cameras(wx.Frame):
         if self.pause == -1:
             print "CURRENT STATE: ", self.state
 
-            if self.sync == self.display1.sync: # image processing hasnt't been updated, do not send any commands
+            if math.fabs(self.sync - self.display1.sync) < 3: # image processing hasnt't been updated, do not send any commands
                 return
             else:
                 self.sync = self.display1.sync
@@ -437,6 +420,8 @@ class Cameras(wx.Frame):
                     a = self.capture(int(90*16))
                     print "Capture results: ", a
                 else:
+                    if distance > 200:
+                        distance = 200
                     a = self.move(int(distance*16))     #16 is the correct value
                 if path_tools.check_dest(self.display1.bot_loc, ball_loc) and a == "captured" : # check if robot has reached a ball
                     self.state = 2
@@ -566,7 +551,10 @@ class Cameras(wx.Frame):
             time.sleep(0.05)
             a = self.ser.read(50)
             self.display.WriteText(a + "\n")
-            time.sleep(0.05)
+            time.sleep(2.00)
+            self.ser.flush()
+            a = self.ser.read(50)
+            self.display.WriteText(a + "\n")
             self.ser.flush()
             return a
             """self.ser.flush()

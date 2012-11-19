@@ -261,8 +261,14 @@ def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
     aslope1, adispl1, aslope2, adispl2 = getTangent(bot_loc, obstacle)
     
     # find the slope and displacement of the radii perpendicular to the tangent lines
-    bslope1 = -1 / float(aslope1)
-    bslope2 = -1 / float(aslope2)
+    if aslope1 == 0:
+        bslope1 = 1
+    else:
+        bslope1 = -1 / float(aslope1)
+    if aslope2 == 0:
+        bslope2 = 1
+    else:
+        bslope2 = -1 / float(aslope2)
 
     bdispl1 = obstacle[1] - bslope1 * obstacle[0]
     bdispl2 = obstacle[1] - bslope2 * obstacle[0]
@@ -339,7 +345,7 @@ def robotTravel(bot_dir, bot_loc, next_pt, final_pt):
     angle = int(angle)
 
     if final_pt:
-        distance = distance - 4*TRAV_UNIT
+        distance = distance - 5*TRAV_UNIT
 
     print "bot_loc: ", bot_loc, "turn: ", turn, "distance: ", distance, "we want it to move from angle: ", angle - turn, "to angle: ", angle 
     print "ROBOT DIRECTIONS: turn", turn, "move forward", distance
