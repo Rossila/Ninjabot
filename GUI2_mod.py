@@ -67,16 +67,6 @@ class CvDisplayPanel(wx.Panel):
         orig1 = self.ImagePro(self.capture1)
         orig2 = self.ImagePro(self.capture2)
 
-        # try to warp if possible, otherwise use default images from webcam
-        try:
-            warp1 = processor.perspective_transform(orig1, warp_coord)
-        except:
-            warp1 = orig1
-
-        try:
-            warp2 = processor.perspective_transform(orig2, warp_coord2)
-        except:
-            warp2 = orig2
 
         # We will combine the two webcam images into a 800x800 image
         mask = cv.CreateImage((800,800), cv.IPL_DEPTH_8U, 3)
@@ -86,19 +76,30 @@ class CvDisplayPanel(wx.Panel):
         # resize warp1 to be 800 x 400 (half of the complete image) copy resized
         # image into temp1
         temp1 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
-        cv.Resize(warp1, temp1)
+        cv.Resize(orig1, temp1)
+
+        # try to warp if possible, otherwise use default images from webcam
+        try:
+            warp1 = processor.perspective_transform(temp1, warp_coord)
+        except:
+            warp1 = orig1
 
         # copy image temp1 to the bottom half of mask
-        cv.Copy(temp1, mask)
+        cv.Copy(warp1, mask)
         cv.ResetImageROI(mask)
 
         cv.SetImageROI(mask, (0, 400, 800, 400))
         
         temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
-        cv.Resize(warp2, temp2)
+        cv.Resize(orig2, temp2)
         
+        # try to warp if possible, otherwise use default images from webcam
+        try:
+            warp2 = processor.perspective_transform(temp2, warp_coord2)
+        except:
+            warp2 = orig2
         # copy image temp2 to the upper half of mask
-        cv.Copy(temp2, mask)
+        cv.Copy(warp2, mask)
         cv.ResetImageROI(mask) # reset image ROI
 
         
