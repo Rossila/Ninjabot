@@ -257,6 +257,8 @@ class Cameras(wx.Frame):
     display1 = None
     next_pt = (0,0)
     pause = -1
+    goal1 = [(0,0),(0,0)]
+    goal2 = [(0,0),(0,0)]
     sync = 0 # a variable between 0 and 50 used to ensure pathfinding waits for image processing
     state = -1 #-1: auto not started, 0: find next position, #1: move to next position, #2: catch ball
     def __init__(self, parent, title):
@@ -361,8 +363,6 @@ class Cameras(wx.Frame):
             f.close()
         else:
             pass
-        
-
 
     def OnStop(self, event):
         self.save()
@@ -643,15 +643,17 @@ class Cameras(wx.Frame):
         warp_coord2 = np.array([], np.float32)
 
 
-        while len(warp_coord) < 4:
+        while len(warp_coord) < 5:
             if len(warp_coord) == 0:
                 cur_pos = "top left"
             elif len(warp_coord) == 1:
                 cur_pos = "top right"
             elif len(warp_coord) == 2:
                 cur_pos = "bottom left"
-            else:
+            elif len(warp_coord) == 3:
                 cur_pos = "bottom right"
+            else:
+                cur_pos = "goal"
 
             orig = cv.QueryFrame(capture1)
             
@@ -668,15 +670,17 @@ class Cameras(wx.Frame):
         print warp_coord
         cv.DestroyWindow("calibrate_image1")
 
-        while len(warp_coord2) < 4:
+        while len(warp_coord2) < 5:
             if len(warp_coord2) == 0:
                 cur_pos = "top left"
             elif len(warp_coord2) == 1:
                 cur_pos = "top right"
             elif len(warp_coord2) == 2:
                 cur_pos = "bottom left"
-            else:
+            elif len(warp_coord2) == 3:
                 cur_pos = "bottom right"
+            else:
+                cur_pos = "goal"
 
             orig2 = cv.QueryFrame(capture2)
             
@@ -691,6 +695,9 @@ class Cameras(wx.Frame):
 
         print warp_coord2
         cv.DestroyWindow("calibrate_image2")
+
+
+
 
 capture1 = cv.CaptureFromCAM(0)
 capture2 = cv.CaptureFromCAM(1)
@@ -720,12 +727,18 @@ try :
     filter_storage = eval(f.readline())
     warp_coord =  filter_storage[0]
     warp_coord2 =  filter_storage[1]
+    goal1 = filter_storage[0][4]
+    goal2 = filter_storage[1][4]
 
 except:
 
-    warp_coord = [[0,0],[orig.width, 0],[0, orig.height],[orig.width, orig.height]]
+    warp_coord = [[0,0],[orig.width, 0],[0, orig.height],[orig.width, orig.height],[0,0]]
 
-    warp_coord2 = [[0,0],[orig2.width, 0],[0, orig2.height],[orig2.width, orig2.height]] 
+    warp_coord2 = [[0,0],[orig2.width, 0],[0, orig2.height],[orig2.width, orig2.height],[0,0]] 
+
+    goal1 = [0,0]
+
+    goal2 = [0,0]
 
 
 
