@@ -192,7 +192,17 @@ class CvDisplayPanel(wx.Panel):
 
             processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
 
-            self.next_pt, turn, distance, ball_loc = path_tools.PathFind(self.bot_dir, self.bot_loc, self.veriBalls, self.veriObstacles)
+            results = path_tools.PathFind(self.bot_dir, self.bot_loc, self.veriBalls, self.veriObstacles)
+            if results == None:
+                turn = 0
+                distance = 0
+                ball_loc = (0,0)
+            else:
+                self.next_pt = results[0]
+                turn = results[1]
+                distance = results[2]
+                ball_loc = results[3]
+
             print "next_pt: ", self.next_pt
             self.planned_path.append(self.next_pt)
 
@@ -406,11 +416,21 @@ class Cameras(wx.Frame):
             else:
                 self.sync = self.display1.sync
             if self.state == 0: # state 0 is find and send the command to move towards the closest ball
-                self.next_pt, angle, distance, ball_loc = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
+                results = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
+                if results == None:
+                    angle = 0
+                    distance = 0
+                    ball_loc = (0,0)
+                else:
+                    self.next_pt = results[0]
+                    angle = results[1]
+                    distance = results[2]
+                    ball_loc = results[3]
                 self.state = 1 # state 1 indicates the robot is currently travelling to its next point
-                a = self.turn(angle)
-                if path_tools.check_dest(self.next_pt, ball_loc): # try capturing
-                    a = self.capture(int(distance*16))
+                if angle != 0:
+                    a = self.turn(angle)
+                if path_tools.check_dest(self.display1.bot_loc, ball_loc, 100): # try capturing
+                    a = self.capture(int(90*16))
                     print "Capture results: ", a
                 else:
                     a = self.move(int(distance*16))     #16 is the correct value

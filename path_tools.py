@@ -21,8 +21,8 @@ d_purple = cv.RGB(150, 55, 150)
 travelled_paths = []
 
 ball_radius = 18
-obstacle_radius = 40
-rover_width = 50
+obstacle_radius = 20
+rover_width = 40
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
 # though it should be rover_width/2, we'll use rover_width to be on the safe side
@@ -36,7 +36,7 @@ FIELD_HEIGHT = 800
 
 image = cv2.imread('empty.jpg')
 
-def PathFind(bot_dir, bot_loc, balls, obstacles, destination = None):
+def PathFind(bot_dir, bot_loc, balls, obstacles):
     #bot_loc = (FIELD_WIDTH/2, rover_width)
     #bot_dir = 90
     next_pt = (0,0)
@@ -48,31 +48,27 @@ def PathFind(bot_dir, bot_loc, balls, obstacles, destination = None):
 
     for obstacle in obstacles:
         draw_circle(obstacle_radius, obstacle[0], obstacle[1], d_green)'''
+    if balls == None or len(balls) == 0:
+        return None
+    else:
+        balls = find_closest_ball(balls, bot_loc) # sort the balls in order of their distance from the robot
 
-    if destination == None:
-        if balls == None or len(balls) == 0:
-            return next_pt
-        else:
-            balls = find_closest_ball(balls, bot_loc) # sort the balls in order of their distance from the robot
+    # make sure the ball isn't too close to an obstacle for us to pick up
+    index = 0
 
-        # make sure the ball isn't too close to an obstacle for us to pick up
-        index = 0
-        destination = balls[index]
+    while index < len(balls):
+        intersections = []
+        intersections = checkIntersections(balls[index], balls[index], obstacles, intersections)
+        if len(intersections) != 0: 
+            index = index + 1
+            if index == len(balls):
+                return None # we can' get to any of these balls
+        else: # if there are no intersections, this ball is fine
+            break
 
-        while index < len(balls):
-            intersections = []
-            intersections = checkIntersections(balls[index], balls[index], obstacles, intersections)
-            if len(intersections) != 0: 
-                index = index + 1
-                destination = balls[index]
-                if index == len(balls):
-                    return next_pt # we can' get to any of these balls
-            else: # if there are no intersections, this ball is fine
-                break
+    next_pt, turn, distance = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
 
-    next_pt, turn, distance = findPath(last_pt, bot_loc, next_pt, obstacles, destination, bot_dir)
-
-    return next_pt, turn, distance, destination
+    return next_pt, turn, distance, balls[index]
 
 def draw_line(start, end, color):
     cv2.line(image, start, end, color, thickness = 1, lineType=8, shift=0)
@@ -321,7 +317,7 @@ def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
 # Since the robot won't be able to make exact angle turns,
 # this function draws a purple line to estimate where the robot would be
 # if it could only turn TURN_ANGLE and travel TRAV_UNIT
-def robotTravel(bot_dir, bot_loc, next_pt):
+def robotTravel(bot_dir, bot_loc, next_pt, final_pt):
     angle = line_angle(bot_loc, next_pt)
     # want turn to be between -180 to 180 degrees,
     # neg degrees are ccw
@@ -339,6 +335,9 @@ def robotTravel(bot_dir, bot_loc, next_pt):
     distance = int(distance/TRAV_UNIT) * TRAV_UNIT
 
     angle = int(bot_dir + turn)
+
+    if final_pt:
+        distance = distance - 3*TRAV_UNIT
 
     print "bot_loc: ", bot_loc, "turn: ", turn, "distance: ", distance, "we want it to move from angle: ", angle - turn, "to angle: ", angle 
     print "ROBOT DIRECTIONS: turn", turn, "move forward", distance
@@ -401,8 +400,12 @@ def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir):
 
     draw_circle(4, next_pt[0], next_pt[1], d_red)
 
-    # estimates where the robot will actually go
-    next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt) # adjust the path
+    if check_dest(next_pt, bot_dest): # check if the next point is the final point
+        # estimates where the robot will actually go
+        next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, True) # adjust the path
+    else:
+        next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, False) # adjust the path
+
     return next_pt, turn, distance
 
 # check if this point will hit the edge of the field
@@ -410,9 +413,11 @@ def check_boundaries((x,y)):
     return x > rover_width and y > rover_width and x < FIELD_WIDTH - rover_width and y < FIELD_HEIGHT - rover_width
 
 # returns a boolean indicating whether or not the robot has reached it's destination
-def check_dest(bot_loc, bot_dest):
-    return distance_between_points(bot_loc, bot_dest) < rover_width
-
+def check_dest(bot_loc, bot_dest, distance = None):
+    if distance == None:
+        return distance_between_points(bot_loc, bot_dest) < rover_width
+    else:
+        return distance_between_points(bot_loc, bot_dest) < distance
 """# Initialize Coordinates
 bot_loc = (image.shape[1]/2, rover_width)
 bot_dir = 90
