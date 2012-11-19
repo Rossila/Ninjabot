@@ -426,10 +426,13 @@ class Cameras(wx.Frame):
                     angle = results[1]
                     distance = results[2]
                     ball_loc = results[3]
+                if self.next_pt == (0,0):
+                    print "NO PATH FOUND !!!!!!!"
+                    return
                 self.state = 1 # state 1 indicates the robot is currently travelling to its next point
                 if angle != 0:
                     a = self.turn(angle)
-                if path_tools.check_dest(self.display1.bot_loc, ball_loc, 100): # try capturing
+                if path_tools.check_dest(self.display1.bot_loc, ball_loc, 120): # try capturing
                     a = self.capture(int(90*16))
                     print "Capture results: ", a
                 else:
