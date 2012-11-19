@@ -323,10 +323,12 @@ def robotTravel(bot_dir, bot_loc, next_pt, final_pt):
     # neg degrees are ccw
     # pos degrees are cw
     turn = angle - bot_dir
+    print "before adjustment turn: ", turn
     if turn > 180:
-        turn = -1* (360 - 180)
+        turn = -1 * (360 - turn)
     elif turn < -180:
-        turn = 360 + 180
+        turn = 360 + turn
+    print "after adjustment turn: ", turn
 
     # get the closest value divisible by TURN_ANGLE
     turn = int(turn/TURN_ANGLE) * TURN_ANGLE
@@ -334,10 +336,10 @@ def robotTravel(bot_dir, bot_loc, next_pt, final_pt):
     # get the closest value divisible by TRAV_UNIT
     distance = int(distance/TRAV_UNIT) * TRAV_UNIT
 
-    angle = int(bot_dir + turn)
+    angle = int(angle)
 
     if final_pt:
-        distance = distance - 3*TRAV_UNIT
+        distance = distance - 4*TRAV_UNIT
 
     print "bot_loc: ", bot_loc, "turn: ", turn, "distance: ", distance, "we want it to move from angle: ", angle - turn, "to angle: ", angle 
     print "ROBOT DIRECTIONS: turn", turn, "move forward", distance
@@ -372,6 +374,7 @@ def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir):
         test_pt = POI.pop(0)
         # check if the point is within the boundaries of the field:
         if not check_boundaries(test_pt):
+            print "invalid next point: ", test_pt
             continue
         # check to make sure we haven't travelled along this path already (avoid the robot going in loops)
         for path in travelled_paths:
@@ -399,13 +402,14 @@ def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir):
                     print "POI updated: ", POI
 
     draw_circle(4, next_pt[0], next_pt[1], d_red)
-
+    print "next_pt before altering: ", next_pt
     if check_dest(next_pt, bot_dest): # check if the next point is the final point
         # estimates where the robot will actually go
         next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, True) # adjust the path
     else:
         next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, False) # adjust the path
 
+    print"next_pt after altering: ", next_pt
     return next_pt, turn, distance
 
 # check if this point will hit the edge of the field
@@ -467,3 +471,4 @@ while not check_dest(bot_loc,balls[index]):
 cv2.imshow('Image', image)
 
 cv.WaitKey()"""
+
