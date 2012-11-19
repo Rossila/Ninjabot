@@ -21,8 +21,8 @@ d_purple = cv.RGB(150, 55, 150)
 travelled_paths = []
 
 ball_radius = 18
-obstacle_radius = 20
-rover_width = 40
+obstacle_radius = 40
+rover_width = 50
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
 # though it should be rover_width/2, we'll use rover_width to be on the safe side
@@ -36,7 +36,7 @@ FIELD_HEIGHT = 800
 
 image = cv2.imread('empty.jpg')
 
-def PathFind(bot_dir, bot_loc, balls, obstacles):
+def PathFind(bot_dir, bot_loc, balls, obstacles, destination = None):
     #bot_loc = (FIELD_WIDTH/2, rover_width)
     #bot_dir = 90
     next_pt = (0,0)
@@ -48,27 +48,31 @@ def PathFind(bot_dir, bot_loc, balls, obstacles):
 
     for obstacle in obstacles:
         draw_circle(obstacle_radius, obstacle[0], obstacle[1], d_green)'''
-    if balls == None or len(balls) == 0:
-        return next_pt
-    else:
-        balls = find_closest_ball(balls, bot_loc) # sort the balls in order of their distance from the robot
 
-    # make sure the ball isn't too close to an obstacle for us to pick up
-    index = 0
+    if destination == None:
+        if balls == None or len(balls) == 0:
+            return next_pt
+        else:
+            balls = find_closest_ball(balls, bot_loc) # sort the balls in order of their distance from the robot
 
-    while index < len(balls):
-        intersections = []
-        intersections = checkIntersections(balls[index], balls[index], obstacles, intersections)
-        if len(intersections) != 0: 
-            index = index + 1
-            if index == len(balls):
-                return next_pt # we can' get to any of these balls
-        else: # if there are no intersections, this ball is fine
-            break
+        # make sure the ball isn't too close to an obstacle for us to pick up
+        index = 0
+        destination = balls[index]
 
-    next_pt, turn, distance = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
+        while index < len(balls):
+            intersections = []
+            intersections = checkIntersections(balls[index], balls[index], obstacles, intersections)
+            if len(intersections) != 0: 
+                index = index + 1
+                destination = balls[index]
+                if index == len(balls):
+                    return next_pt # we can' get to any of these balls
+            else: # if there are no intersections, this ball is fine
+                break
 
-    return next_pt, turn, distance, balls[index]
+    next_pt, turn, distance = findPath(last_pt, bot_loc, next_pt, obstacles, destination, bot_dir)
+
+    return next_pt, turn, distance, destination
 
 def draw_line(start, end, color):
     cv2.line(image, start, end, color, thickness = 1, lineType=8, shift=0)

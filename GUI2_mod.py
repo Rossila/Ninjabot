@@ -22,6 +22,7 @@ class CvDisplayPanel(wx.Panel):
     TIMER_PLAY_ID = 101 
     CHECK_INDEX = 0
 
+    planned_path = []
     balls = []
     obstacles = []
     veriBalls = []
@@ -193,6 +194,13 @@ class CvDisplayPanel(wx.Panel):
 
             self.next_pt, turn, distance, ball_loc = path_tools.PathFind(self.bot_dir, self.bot_loc, self.veriBalls, self.veriObstacles)
             print "next_pt: ", self.next_pt
+            self.planned_path.append(self.next_pt)
+
+            bot_nx = self.next_pt
+            #while not path_tools.check_dest(bot_nx, ball_loc):
+                #goal_pt, turn_nx, distance_nx, ball_loc = path_tools.PathFind(bot_nx, self.bot_loc, self.veriBalls, self.veriObstacles, ball_loc)
+                #self.planned_path.append(goal_pt)
+                #bot_nx = goal_pt
 
             cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13,cv.RGB(150, 55, 150), 3, 8, 0)
             
@@ -205,10 +213,8 @@ class CvDisplayPanel(wx.Panel):
         else:
             self.CHECK_INDEX = self.CHECK_INDEX + 1
             processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
-
-            #bot_loc = (800/2, 25)
             cv.Line(mask, (self.bot_loc[0], self.bot_loc[1]),(self.next_pt[0], self.next_pt[1]), cv.RGB(150, 55, 150), thickness=2, lineType=8, shift=0)
-
+            #for pt in self.planned_path:
             cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13, cv.RGB(150, 55, 150), 3, 8, 0)
 
         return mask
@@ -257,8 +263,8 @@ class Cameras(wx.Frame):
                         (wx.Button(self, 7, 'Warp') , 0, wx.EXPAND),
                         (wx.Button(self, 8, 'Auto') , 0, wx.EXPAND),
                         (wx.Button(self, 9, 'Color') , 0, wx.EXPAND)])
-        box.Add(self.display, 1, wx.EXPAND)
-        box.Add(buttons, 1, wx.EXPAND)
+        box.Add(self.display, 1, wx.ALL | wx.ALIGN_RIGHT)
+        box.Add(buttons, 1, wx.ALL | wx.ALIGN_RIGHT)
 
         right = wx.BoxSizer(wx.VERTICAL)
         self.display1 = CvDisplayPanel(self)
@@ -302,7 +308,7 @@ class Cameras(wx.Frame):
         TIMER_ID = 100
         self.timer = wx.Timer(self, TIMER_ID) 
         wx.EVT_TIMER(self, TIMER_ID, self.onNextFrame2)
-        self.timer.Start(1000)
+        self.timer.Start(4000)
 
     def OnExit(self,evt):
         self.Close(True)  # Close the frame.
@@ -376,11 +382,19 @@ class Cameras(wx.Frame):
             self.next_pt, angle, distance, ball_loc = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
             self.state = 1 # state 1 indicates the robot is currently travelling to its next point
             a = self.turn(angle)
-            a = self.move(int(distance*16))     #16 is the correct value
-            if path_tools.check_dest(self.display1.bot_loc, ball_loc): # check if robot has reached a ball
+            if path_tools.check_dest(self.next_pt, ball_loc): # try capturing
+                a = self.capture(int(distance*16))
+                print "Capture results: ", a
+            else:
+                a = self.move(int(distance*16))     #16 is the correct value
+            if path_tools.check_dest(self.display1.bot_loc, ball_loc) and a == "captured" : # check if robot has reached a ball
                 self.state = 2
             else:
                 self.state = 0
+
+        if self.state == 2:
+            self.shoot()
+            self.state = 3
 
             
     def turnAndMove(self, angle, distance):
@@ -477,6 +491,54 @@ class Cameras(wx.Frame):
             self.display.WriteText("Com Port Error.")
         except AttributeError:
             self.display.WriteText("Command: Forward Command Failed.\n")
+    def capture(self,distance):
+
+        self.display.WriteText("Sending Command: Move " + str(distance) + "\n")
+        try: 
+            self.ser.write('c')
+            self.convertStraight(distance)
+            self.ser.flush()
+            self.display.WriteText("Capture Command: Forward. 100: " + str(self.firstStraight) + " 1000: " + str(self.secondStraight))
+            time.sleep(0.05)
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            time.sleep(0.05)
+            self.ser.write(self.firstStraight)  #100 increments
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            time.sleep(0.05)
+            self.ser.write(self.secondStraight) #1000 increments
+            self.ser.flush()
+            time.sleep(0.05)
+            a = self.ser.read(50)
+            self.display.WriteText(a + "\n")
+            time.sleep(0.05)
+            self.ser.flush()
+            return a
+            """self.ser.flush()
+            a = self.ser.read(20)
+            self.display.WriteText(a + "\n")
+            self.ser.flush()
+            return a            """
+
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+        except AttributeError:
+            self.display.WriteText("Command: Forward Command Failed.\n")
+
+    def shoot(self):
+        self.display.WriteText("Sending Command: Shoot\n")
+        #convertTurn()
+        try: 
+            self.ser.write('s')
+            self.ser.flush()
+            self.display.WriteText("Command:Shoot sent.\n")
+        except serial.SerialException:
+            self.display.WriteText("Com Port Error.")
+        except AttributeError:
+            self.display.WriteText("Command: Forward Command Failed.\n")
+
 
     def turn(self,angle):
         self.display.WriteText("Sending Command: Turn " + str(angle) + "\n")
