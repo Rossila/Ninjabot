@@ -246,6 +246,7 @@ class Cameras(wx.Frame):
     secondStraight = 0
     display1 = None
     next_pt = (0,0)
+    pause = -1
     sync = 0 # a variable between 0 and 50 used to ensure pathfinding waits for image processing
     state = -1 #-1: auto not started, 0: find next position, #1: move to next position, #2: catch ball
     def __init__(self, parent, title):
@@ -262,7 +263,8 @@ class Cameras(wx.Frame):
                         (wx.Button(self, 6, 'Right') , 0, wx.EXPAND),
                         (wx.Button(self, 7, 'Warp') , 0, wx.EXPAND),
                         (wx.Button(self, 8, 'Auto') , 0, wx.EXPAND),
-                        (wx.Button(self, 9, 'Color') , 0, wx.EXPAND)])
+                        (wx.Button(self, 9, 'Color') , 0, wx.EXPAND),
+                        (wx.Button(self, 10, 'Pause') , 0, wx.EXPAND)])
         box.Add(self.display, 1, wx.ALL | wx.ALIGN_RIGHT)
         box.Add(buttons, 1, wx.ALL | wx.ALIGN_RIGHT)
 
@@ -289,6 +291,7 @@ class Cameras(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnWarp, id=7)
         self.Bind(wx.EVT_BUTTON, self.onAuto, id=8)
         self.Bind(wx.EVT_BUTTON, self.OnColor, id=9)
+        self.Bind(wx.EVT_BUTTON, self.OnPause, id=10)
 
         self.CreateStatusBar() # A Statusbar in the bottom of the window
 
@@ -327,6 +330,29 @@ class Cameras(wx.Frame):
         output = [np.array(warp_coord)[:].tolist(),np.array(warp_coord2)[:].tolist(),colorfilter.red,colorfilter.blue,colorfilter.green,colorfilter.yellow]
         f.write(str(output))
         f.close()
+
+    def OnPause(self,event):
+        self.pause = self.pause * -1
+        if self.pause == 1:
+
+            f = open('log.txt', 'w')
+
+            """
+            f.write("warp_coord = " + str(warp_coord) +"\n")
+            f.write("warp_coord2 = " + str(warp_coord2) +"\n")
+            f.write("colorfilter.red = " + str(colorfilter.red) +"\n")
+            f.write("colorfilter.blue = " + str(colorfilter.blue) +"\n")
+            f.write("colorfilter.green = " + str(colorfilter.green) +"\n")
+            f.write("colorfilter.yellow = " + str(colorfilter.yellow) +"\n")
+            """
+            #output = [np.array(warp_coord)[:].tolist(),np.array(warp_coord2)[:].tolist(),colorfilter.red,colorfilter.blue,colorfilter.green,colorfilter.yellow]
+            f.write(str(self.display.GetValue()))
+
+            f.close()
+        else:
+            pass
+        
+
 
     def OnStop(self, event):
         self.save()
@@ -372,29 +398,32 @@ class Cameras(wx.Frame):
         self.state = 0 
 
     def onNextFrame2(self, evt):
-        print "CURRENT STATE: ", self.state
+        if self.pause == -1:
+            print "CURRENT STATE: ", self.state
 
-        if self.sync == self.display1.sync: # image processing hasnt't been updated, do not send any commands
-            return
+            if self.sync == self.display1.sync: # image processing hasnt't been updated, do not send any commands
+                return
+            else:
+                self.sync = self.display1.sync
+            if self.state == 0: # state 0 is find and send the command to move towards the closest ball
+                self.next_pt, angle, distance, ball_loc = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
+                self.state = 1 # state 1 indicates the robot is currently travelling to its next point
+                a = self.turn(angle)
+                if path_tools.check_dest(self.next_pt, ball_loc): # try capturing
+                    a = self.capture(int(distance*16))
+                    print "Capture results: ", a
+                else:
+                    a = self.move(int(distance*16))     #16 is the correct value
+                if path_tools.check_dest(self.display1.bot_loc, ball_loc) and a == "captured" : # check if robot has reached a ball
+                    self.state = 2
+                else:
+                    self.state = 0
+
+            if self.state == 2:
+                self.shoot()
+                self.state = 3
         else:
-            self.sync = self.display1.sync
-        if self.state == 0: # state 0 is find and send the command to move towards the closest ball
-            self.next_pt, angle, distance, ball_loc = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
-            self.state = 1 # state 1 indicates the robot is currently travelling to its next point
-            a = self.turn(angle)
-            if path_tools.check_dest(self.next_pt, ball_loc): # try capturing
-                a = self.capture(int(distance*16))
-                print "Capture results: ", a
-            else:
-                a = self.move(int(distance*16))     #16 is the correct value
-            if path_tools.check_dest(self.display1.bot_loc, ball_loc) and a == "captured" : # check if robot has reached a ball
-                self.state = 2
-            else:
-                self.state = 0
-
-        if self.state == 2:
-            self.shoot()
-            self.state = 3
+            pass
 
             
     def turnAndMove(self, angle, distance):

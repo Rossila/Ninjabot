@@ -1,0 +1,22 @@
+Sending Command: Move 1000
+Command: Forward Command Failed.
+Sending Command: Move -1000
+Command: Forward Command Failed.
+Sending Command: Turn 90
+Command: Turn Failed.
+Sending Command: Turn 90
+Command: Turn Failed.
+Sending Command: Turn 90
+Command: Turn Failed.
+Sending Command: Turn 90
+Command: Turn Failed.
+Sending Command: Turn 90
+Command: Turn Failed.
+Sending Command: Turn 90
+Command: Turn Failed.
+Sending Command: Turn 90
+Command: Turn Failed.
+Sending Command: Turn 90
+Command: Turn Failed.
+Sending Command: Turn 90
+Command: Turn Failed.
