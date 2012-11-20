@@ -71,11 +71,11 @@ class CvDisplayPanel(wx.Panel):
         # We will combine the two webcam images into a 800x800 image
         mask = cv.CreateImage((800,800), cv.IPL_DEPTH_8U, 3)
 
-        cv.SetImageROI(mask, (0, 0, 800, 400))
+        cv.SetImageROI(mask, (0, 0, 800, 450))
 
         # resize warp1 to be 800 x 400 (half of the complete image) copy resized
         # image into temp1
-        temp1 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
+        temp1 = cv.CreateImage((800,450), cv.IPL_DEPTH_8U, 3)
         cv.Resize(orig1, temp1)
 
         # try to warp if possible, otherwise use default images from webcam
@@ -85,12 +85,12 @@ class CvDisplayPanel(wx.Panel):
             warp1 = orig1
 
         # copy image temp1 to the bottom half of mask
-        cv.Copy(warp1, mask)
+        cv.AddWeighted(warp1, 0.5, mask, 0.5, 0, mask)
         cv.ResetImageROI(mask)
 
-        cv.SetImageROI(mask, (0, 400, 800, 400))
+        cv.SetImageROI(mask, (0, 350, 800, 450))
         
-        temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
+        temp2 = cv.CreateImage((800,450), cv.IPL_DEPTH_8U, 3)
         cv.Resize(orig2, temp2)
         
         # try to warp if possible, otherwise use default images from webcam
@@ -99,7 +99,8 @@ class CvDisplayPanel(wx.Panel):
         except:
             warp2 = orig2
         # copy image temp2 to the upper half of mask
-        cv.Copy(warp2, mask)
+        #cv.Copy(warp2, mask)
+        cv.AddWeighted(warp2, 0.5, mask, 0.5, 0, mask)
         cv.ResetImageROI(mask) # reset image ROI
 
         
