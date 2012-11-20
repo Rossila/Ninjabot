@@ -1097,6 +1097,12 @@ class ColorFilter(wx.Frame):
         #cv.Resize(orig2, temp2)
         cv.ShowImage("colorplz", temp2)
         
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,yellow,yellow,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
 
     def OnSliderScroll_sld_hue_min_red(self, e):
         global red
@@ -1457,6 +1463,13 @@ class ColorFilter(wx.Frame):
         #cv.Resize(orig2, temp2)
         cv.ShowImage("colorplz", temp2) 
 
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,yellow,yellow,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
+
     def OnSliderScroll_sld_hue_max_yellow(self, e):
         global yellow
         obj = e.GetEventObject()
@@ -1470,6 +1483,13 @@ class ColorFilter(wx.Frame):
         temp2 = processor.colorFilterCombine(orig2,yellow,yellow,1)
         #cv.Resize(orig2, temp2)
         cv.ShowImage("colorplz", temp2) 
+
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,yellow,yellow,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
 
     def OnSliderScroll_sld_sat_min_yellow(self, e):
         global yellow
@@ -1485,6 +1505,13 @@ class ColorFilter(wx.Frame):
         #cv.Resize(orig2, temp2)
         cv.ShowImage("colorplz", temp2) 
 
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,yellow,yellow,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
+
     def OnSliderScroll_sld_sat_max_yellow(self, e):
         global yellow
         obj = e.GetEventObject()
@@ -1498,6 +1525,12 @@ class ColorFilter(wx.Frame):
         temp2 = processor.colorFilterCombine(orig2,yellow,yellow,1)
         #cv.Resize(orig2, temp2)
         cv.ShowImage("colorplz", temp2) 
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,yellow,yellow,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
 
     def OnSliderScroll_sld_val_min_yellow(self, e):
         global yellow
@@ -1512,6 +1545,12 @@ class ColorFilter(wx.Frame):
         temp2 = processor.colorFilterCombine(orig2,yellow,yellow,1)
         #cv.Resize(orig2, temp2)
         cv.ShowImage("colorplz", temp2) 
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,yellow,yellow,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
 
     def OnSliderScroll_sld_val_max_yellow(self, e):
         global yellow
@@ -1526,6 +1565,12 @@ class ColorFilter(wx.Frame):
         temp2 = processor.colorFilterCombine(orig2,yellow,yellow,1)
         #cv.Resize(orig2, temp2)
         cv.ShowImage("colorplz", temp2) 
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,yellow,yellow,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
 
 
 app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
