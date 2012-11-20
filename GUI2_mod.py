@@ -149,6 +149,16 @@ class CvDisplayPanel(wx.Panel):
         #print "sorted_list: ", sorted_list
 
         return sorted_list
+
+    def roboOffset(self, bot_loc):
+        top = 20
+        bot = 45
+        y = bot_loc[1]
+        x = bot_loc[0]
+
+        if y < 400:
+            y = y - y/400 * 25 - 20
+        return (x,y)
     
     def findCircles(self, mask):
         red = colorfilter.red
@@ -172,6 +182,9 @@ class CvDisplayPanel(wx.Panel):
         tail_coord, head_coord = processor.robot_tracking(mask, squares)
         #print "HEAD AND TAIL: ", head_coord, tail_coord
         self.bot_loc = ((head_coord[0] + tail_coord[0])/2,(head_coord[1] + tail_coord[1])/2)
+        #offset the bot_loc
+        self.bot_loc = self.roboOffset(self.bot_loc)
+
         self.bot_dir = path_tools.line_angle(tail_coord, head_coord)
         cur_balls, cur_obstacles = processor.sort_circles(storage)
 
@@ -557,11 +570,11 @@ class Cameras(wx.Frame):
             self.ser.flush()
             time.sleep(0.05)
             a = self.ser.read(50)
-            self.display.WriteText(a + "\n")
+            self.display.WriteText("first read" + a + "\n")
             time.sleep(2.00)
             self.ser.flush()
-            a = self.ser.read(50)
-            self.display.WriteText(a + "\n")
+            a = self.ser.read(20)
+            self.display.WriteText("second read" + a + "\n")
             self.ser.flush()
             return a
             """self.ser.flush()
