@@ -39,8 +39,8 @@ class CvDisplayPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-        self.capture1 = cv.CaptureFromCAM(0)
-        self.capture2 = cv.CaptureFromCAM(1)
+        self.capture1 = cv.CaptureFromCAM(1)
+        self.capture2 = cv.CaptureFromCAM(0)
 
         # reduce flickering
         self.SetCompositeMode(True)
@@ -71,11 +71,11 @@ class CvDisplayPanel(wx.Panel):
         # We will combine the two webcam images into a 800x800 image
         mask = cv.CreateImage((800,800), cv.IPL_DEPTH_8U, 3)
 
-        cv.SetImageROI(mask, (0, 0, 800, 450))
+        cv.SetImageROI(mask, (0, 0, 800, 400))
 
         # resize warp1 to be 800 x 400 (half of the complete image) copy resized
         # image into temp1
-        temp1 = cv.CreateImage((800,450), cv.IPL_DEPTH_8U, 3)
+        temp1 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
         cv.Resize(orig1, temp1)
 
         # try to warp if possible, otherwise use default images from webcam
@@ -85,12 +85,13 @@ class CvDisplayPanel(wx.Panel):
             warp1 = orig1
 
         # copy image temp1 to the bottom half of mask
-        cv.AddWeighted(warp1, 0.5, mask, 0.5, 0, mask)
+        cv.Copy(warp1, mask)
+        #cv.AddWeighted(warp1, 0.5, mask, 0.5, 0, mask)
         cv.ResetImageROI(mask)
 
-        cv.SetImageROI(mask, (0, 350, 800, 450))
+        cv.SetImageROI(mask, (0, 390, 800, 410))
         
-        temp2 = cv.CreateImage((800,450), cv.IPL_DEPTH_8U, 3)
+        temp2 = cv.CreateImage((800,410), cv.IPL_DEPTH_8U, 3)
         cv.Resize(orig2, temp2)
         
         # try to warp if possible, otherwise use default images from webcam
@@ -99,11 +100,15 @@ class CvDisplayPanel(wx.Panel):
         except:
             warp2 = orig2
         # copy image temp2 to the upper half of mask
-        #cv.Copy(warp2, mask)
-        cv.AddWeighted(warp2, 0.5, mask, 0.5, 0, mask)
+        cv.Copy(warp2, mask)
+        #cv.AddWeighted(warp2, 0.5, mask, 0.5, 0, mask)
         cv.ResetImageROI(mask) # reset image ROI
 
+        cv.SetImageROI(mask, (0, 0, 800, 400))
+
+        cv.AddWeighted(warp1, 0.5, mask, 0.5, 0, mask)
         
+        cv.ResetImageROI(mask)
         #cv.ShowImage("added together!", mask)
         #cv.CvtColor(mask, mask, cv.CV_BGR2RGB)
 
@@ -158,6 +163,9 @@ class CvDisplayPanel(wx.Panel):
 
         if y < 400:
             y = y - y/400 * 25 - 20
+
+        if y >= 400:
+            y = y + y/400 * 25 + 20
         return (x,y)
     
     def findCircles(self, mask):
@@ -181,9 +189,12 @@ class CvDisplayPanel(wx.Panel):
         # robot location detection
         tail_coord, head_coord = processor.robot_tracking(mask, squares)
         #print "HEAD AND TAIL: ", head_coord, tail_coord
-        self.bot_loc = ((head_coord[0] + tail_coord[0])/2,(head_coord[1] + tail_coord[1])/2)
-        #offset the bot_loc
-        self.bot_loc = self.roboOffset(self.bot_loc)
+        if head_coord == (0,0) or tail_coord == (0,0):
+            self.bot_loc = (0,0)
+        else:
+            self.bot_loc = ((head_coord[0] + tail_coord[0])/2,(head_coord[1] + tail_coord[1])/2)
+            #offset the bot_loc
+            self.bot_loc = self.roboOffset(self.bot_loc)
 
         self.bot_dir = path_tools.line_angle(tail_coord, head_coord)
         cur_balls, cur_obstacles = processor.sort_circles(storage)
@@ -344,15 +355,16 @@ class Cameras(wx.Frame):
         TIMER_ID = 100
         self.timer = wx.Timer(self, TIMER_ID) 
         wx.EVT_TIMER(self, TIMER_ID, self.onNextFrame2)
-        self.timer.Start(1000)
+        self.timer.Start(100)
 
     def OnExit(self,evt):
+        self.save()
         self.Close(True)  # Close the frame.
 
     def save(self):
         f = open('setting.txt', 'w')
 
-        output = [np.array(warp_coord)[:].tolist(),np.array(warp_coord2)[:].tolist(),colorfilter.red,colorfilter.blue,colorfilter.green,colorfilter.yellow]
+        output = [np.array(warp_coord)[:].tolist(),np.array(warp_coord2)[:].tolist(),red,blue,green,yellow]
         f.write(str(output))
         f.close()
 
@@ -415,11 +427,16 @@ class Cameras(wx.Frame):
         if self.pause == -1:
             print "CURRENT STATE: ", self.state
 
-            if math.fabs(self.sync - self.display1.sync) < 3: # image processing hasnt't been updated, do not send any commands
+            if math.fabs(self.sync - self.display1.sync) < 2: # image processing hasnt't been updated, do not send any commands
                 return
             else:
                 self.sync = self.display1.sync
             if self.state == 0: # state 0 is find and send the command to move towards the closest ball
+                print "self.display1.bot_loc: ", self.display1.bot_loc
+                if path_tools.check_dest(self.display1.bot_loc, (0,0), 30): # robot wasn't found move it forward a bit
+                    a = self.turn(15)
+                    a = self.move(int(900))
+                    return
                 results = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
                 if results == None:
                     angle = 0
@@ -443,14 +460,13 @@ class Cameras(wx.Frame):
                     if distance > 200:
                         distance = 200
                     a = self.move(int(distance*16))     #16 is the correct value
-                if path_tools.check_dest(self.display1.bot_loc, ball_loc) and a == "captured" : # check if robot has reached a ball
+                if "captured" in a : # check if robot has reached a ball
                     self.state = 2
                 else:
                     self.state = 0
 
             if self.state == 2:
-                self.shoot()
-                self.state = 3
+                print "IT GOT THE BALL \n\n\n\n"
         else:
             pass
 
@@ -573,7 +589,7 @@ class Cameras(wx.Frame):
             self.display.WriteText("first read" + a + "\n")
             time.sleep(2.00)
             self.ser.flush()
-            a = self.ser.read(20)
+            a = self.ser.read(100)
             self.display.WriteText("second read" + a + "\n")
             self.ser.flush()
             return a
@@ -643,6 +659,7 @@ class Cameras(wx.Frame):
         
     def OnColor(self,event):
         cv.ShowImage("colorplz", orig)
+        cv.ShowImage("colorplz2", orig2)
         popup = ColorFilter(frame) # A Frame is a top-level window.
         popup.Show(True)
 
@@ -712,7 +729,7 @@ class Cameras(wx.Frame):
                 cur_pos = "goal"
 
             orig2 = cv.QueryFrame(capture2)
-            temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 3)
+            temp2 = cv.CreateImage((800,410), cv.IPL_DEPTH_8U, 3)
             cv.Resize(orig2, temp2)
                 
             cv.SetMouseCallback("calibrate_image2",on_mouse2, 0);
@@ -746,8 +763,8 @@ class Cameras(wx.Frame):
 
 
 
-capture1 = cv.CaptureFromCAM(0)
-capture2 = cv.CaptureFromCAM(1)
+capture1 = cv.CaptureFromCAM(1)
+capture2 = cv.CaptureFromCAM(0)
 
 orig = cv.QueryFrame(capture1)
 orig2 = cv.QueryFrame(capture2)
@@ -955,6 +972,13 @@ class ColorFilter(wx.Frame):
         temp2 = processor.colorFilterCombine(orig2,green,green,1)
         #cv.Resize(orig2, temp2)
         cv.ShowImage("colorplz", temp2)
+
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,green,green,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
         
     def ButtonBlue(self, e):
         
@@ -1120,7 +1144,14 @@ class ColorFilter(wx.Frame):
         temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
         temp2 = processor.colorFilterCombine(orig2,green,green,1)
         #cv.Resize(orig2, temp2)
-        cv.ShowImage("colorplz", temp2) 
+        cv.ShowImage("colorplz", temp2)
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,green,green,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
+
 
     def OnSliderScroll_sld_hue_max_green(self, e):
         global green
@@ -1135,7 +1166,14 @@ class ColorFilter(wx.Frame):
         temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
         temp2 = processor.colorFilterCombine(orig2,green,green,1)
         #cv.Resize(orig2, temp2)
-        cv.ShowImage("colorplz", temp2) 
+        cv.ShowImage("colorplz", temp2)
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,green,green,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
+
 
     def OnSliderScroll_sld_sat_min_green(self, e):
         global green
@@ -1149,7 +1187,14 @@ class ColorFilter(wx.Frame):
         temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
         temp2 = processor.colorFilterCombine(orig2,green,green,1)
         #cv.Resize(orig2, temp2)
-        cv.ShowImage("colorplz", temp2) 
+        cv.ShowImage("colorplz", temp2)
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,green,green,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
+
 
     def OnSliderScroll_sld_sat_max_green(self, e):
         global green
@@ -1163,7 +1208,14 @@ class ColorFilter(wx.Frame):
         temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
         temp2 = processor.colorFilterCombine(orig2,green,green,1)
         #cv.Resize(orig2, temp2)
-        cv.ShowImage("colorplz", temp2) 
+        cv.ShowImage("colorplz", temp2)
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,green,green,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
+
 
     def OnSliderScroll_sld_val_min_green(self, e):
         global green
@@ -1177,7 +1229,14 @@ class ColorFilter(wx.Frame):
         temp2 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
         temp2 = processor.colorFilterCombine(orig2,green,green,1)
         #cv.Resize(orig2, temp2)
-        cv.ShowImage("colorplz", temp2) 
+        cv.ShowImage("colorplz", temp2)
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,green,green,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
+
 
     def OnSliderScroll_sld_val_max_green(self, e):
         global green
@@ -1187,7 +1246,18 @@ class ColorFilter(wx.Frame):
         #green[1][2] = val
         green = ((green[0][0],green[0][1],green[0][2]),(green[1][0],green[1][1],val)) 
 
+        orig3 = cv.QueryFrame(capture1)
 
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,green,green,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz", temp3)
+        orig3 = cv.QueryFrame(capture1)
+
+        temp3 = cv.CreateImage((800,400), cv.IPL_DEPTH_8U, 1)
+        temp3 = processor.colorFilterCombine(orig3,green,green,1)
+        #cv.Resize(orig2, temp3)
+        cv.ShowImage("colorplz2", temp3)
 
 
 
