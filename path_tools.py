@@ -21,8 +21,8 @@ d_purple = cv.RGB(150, 55, 150)
 travelled_paths = []
 
 ball_radius = 18
-obstacle_radius = 20
-rover_width = 40
+obstacle_radius = 30
+rover_width = 60
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
 # though it should be rover_width/2, we'll use rover_width to be on the safe side
@@ -36,7 +36,7 @@ FIELD_HEIGHT = 800
 
 image = cv2.imread('empty.jpg')
 
-def PathFind(bot_dir, bot_loc, balls, obstacles):
+def PathFind(bot_dir, bot_loc, balls, obstacles, noBoundaries = False, multiple = 6):
     #bot_loc = (FIELD_WIDTH/2, rover_width)
     #bot_dir = 90
     next_pt = (0,0)
@@ -66,8 +66,7 @@ def PathFind(bot_dir, bot_loc, balls, obstacles):
         else: # if there are no intersections, this ball is fine
             break
 
-    next_pt, turn, distance = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
-
+    next_pt, turn, distance = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir, noBoundaries, multiple)
     return next_pt, turn, distance, balls[index]
 
 def draw_line(start, end, color):
@@ -93,6 +92,8 @@ def draw_line_polar(start, angle, distance):
     return end # return the end point
 
 def draw_circle(radius, x, y, color):
+    x = int(x)
+    y = int(y)
     cv2.circle(image, (x, y), 1, black, -1, 8, 0)
     cv2.circle(image, (x, y), radius, color, 3, 8, 0)
 
@@ -323,18 +324,18 @@ def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
 # Since the robot won't be able to make exact angle turns,
 # this function draws a purple line to estimate where the robot would be
 # if it could only turn TURN_ANGLE and travel TRAV_UNIT
-def robotTravel(bot_dir, bot_loc, next_pt, final_pt):
+def robotTravel(bot_dir, bot_loc, next_pt, final_pt, multiple = 6):
     angle = line_angle(bot_loc, next_pt)
     # want turn to be between -180 to 180 degrees,
     # neg degrees are ccw
     # pos degrees are cw
     turn = angle - bot_dir
-    print "before adjustment turn: ", turn
+    #print "before adjustment turn: ", turn
     if turn > 180:
         turn = -1 * (360 - turn)
     elif turn < -180:
         turn = 360 + turn
-    print "after adjustment turn: ", turn
+    #print "after adjustment turn: ", turn
 
     # get the closest value divisible by TURN_ANGLE
     turn = int(turn/TURN_ANGLE) * TURN_ANGLE
@@ -345,7 +346,7 @@ def robotTravel(bot_dir, bot_loc, next_pt, final_pt):
     angle = int(angle)
 
     if final_pt:
-        distance = distance - 5*TRAV_UNIT
+        distance = distance - multiple*TRAV_UNIT
 
     print "bot_loc: ", bot_loc, "turn: ", turn, "distance: ", distance, "we want it to move from angle: ", angle - turn, "to angle: ", angle 
     print "ROBOT DIRECTIONS: turn", turn, "move forward", distance
@@ -353,7 +354,7 @@ def robotTravel(bot_dir, bot_loc, next_pt, final_pt):
 
 # Finds the next point that the robot should travel to
 # Creates a list of Point of interests and finds one that is possible
-def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir):
+def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir, noBoundaries = False, multiple = 6):
     intersections = [] # will hold the indexes of obstacles that the path intersects with
     POI = [] # the list of point of interests, the next point will be chosen from here
     checked_obs = {} # to prevent us from checking for POI on the same obstacle, use a boolean dictionary
@@ -379,9 +380,10 @@ def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir):
     while next_pt == (0,0) and len(POI) > 0:
         test_pt = POI.pop(0)
         # check if the point is within the boundaries of the field:
-        if not check_boundaries(test_pt):
-            print "invalid next point: ", test_pt
-            continue
+        if noBoundaries == False:
+            if not check_boundaries(test_pt):
+                print "invalid next point: ", test_pt
+                continue
         # check to make sure we haven't travelled along this path already (avoid the robot going in loops)
         for path in travelled_paths:
             if test_pt[0] > path[0][0] and test_pt[0] < path[0][1] and test_pt[1] > path[1][0] and test_pt[1] < path[1][1]:
@@ -408,14 +410,14 @@ def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir):
                     print "POI updated: ", POI
 
     draw_circle(4, next_pt[0], next_pt[1], d_red)
-    print "next_pt before altering: ", next_pt
+    #print "next_pt before altering: ", next_pt
     if check_dest(next_pt, bot_dest): # check if the next point is the final point
         # estimates where the robot will actually go
-        next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, True) # adjust the path
+        next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, True, multiple) # adjust the path
     else:
-        next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, False) # adjust the path
+        next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, False, multiple) # adjust the path
 
-    print"next_pt after altering: ", next_pt
+    #print"next_pt after altering: ", next_pt
     return next_pt, turn, distance
 
 # check if this point will hit the edge of the field
