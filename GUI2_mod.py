@@ -207,14 +207,15 @@ class CvDisplayPanel(wx.Panel):
             print "next_pt: ", self.next_pt
             self.planned_path = [] # reset the planned path
             self.planned_path.append(self.next_pt)
-
-            bot_nx = self.next_pt
-            turn_nx = turn
-            while not path_tools.check_dest(bot_nx, ball_loc, 100) and len(self.planned_path) < 4:
-                goal_pt, turn_nx, distance_nx, ball_loc = path_tools.PathFind(turn_nx, bot_nx, self.veriBalls, self.veriObstacles)
-                self.planned_path.append(goal_pt)
-                bot_nx = goal_pt
-
+            try:
+                bot_nx = self.next_pt
+                turn_nx = turn
+                while not path_tools.check_dest(bot_nx, ball_loc, 100) and len(self.planned_path) < 4:
+                    goal_pt, turn_nx, distance_nx, ball_loc = path_tools.PathFind(turn_nx, bot_nx, self.veriBalls, self.veriObstacles)
+                    self.planned_path.append(goal_pt)
+                    bot_nx = goal_pt
+            except:
+                print "Something went wrong"
             cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 5,cv.RGB(150, 55, 150), 3, 8, 0)
             
             self.sync = self.sync + 1 # sync is a variable between 0 and 50 used to ensure path finding waits for the image processing
