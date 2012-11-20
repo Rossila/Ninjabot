@@ -273,7 +273,7 @@ class Cameras(wx.Frame):
         
         self.display = wx.TextCtrl(self, -1, "YOLO",  style=wx.TE_MULTILINE, size=(200,150))
         box = wx.BoxSizer(wx.VERTICAL)
-        buttons = wx.GridSizer(3, 3, 1, 1)
+        buttons = wx.GridSizer(3, 4, 1, 1)
         buttons.AddMany([(wx.Button(self, 1, 'Stop') , 0, wx.EXPAND),
                         (wx.Button(self, 2, 'Up') , 0, wx.EXPAND),
                         (wx.Button(self, 3, 'Start') , 0, wx.EXPAND),
