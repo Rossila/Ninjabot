@@ -213,7 +213,7 @@ def robot_tracking(orig, squares):
     robo_tail = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     robo_head = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     # filter for all yellow and blue - everything else is black
-    robo_tail = colorFilterCombine(orig, green, green,1)
+    robo_tail = colorFilterCombine(orig, red, red,1)
     
 
     cv.Smooth(robo_tail, robo_tail, cv.CV_GAUSSIAN, 7, 7)
@@ -222,7 +222,7 @@ def robot_tracking(orig, squares):
     robo_tail_np = np.asarray(robo_tail[:,:])
     contours_robo_tail, hierarchy = cv2.findContours(robo_tail_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    robo_head = colorFilterCombine(orig, red, red,1)
+    robo_head = colorFilterCombine(orig, green, green,1)
     
     cv.Smooth(robo_head, robo_head, cv.CV_GAUSSIAN, 7, 7)
     
@@ -232,7 +232,7 @@ def robot_tracking(orig, squares):
     contours_robo_head, hierarchy = cv2.findContours(robo_head_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     for cnt in contours_robo_tail:
-        if cv2.contourArea(cnt) >= 1000:
+        if cv2.contourArea(cnt) >= 1700:
 
             moments = cv2.moments(cnt)
 
@@ -243,7 +243,7 @@ def robot_tracking(orig, squares):
             squares.append((massCenterModel,"robo_tail"))
 
     for cnt in contours_robo_head:
-        if cv2.contourArea(cnt) >= 1000:
+        if cv2.contourArea(cnt) >= 1900:
 
             moments = cv2.moments(cnt)
 
