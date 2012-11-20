@@ -205,15 +205,17 @@ class CvDisplayPanel(wx.Panel):
                 ball_loc = results[3]
 
             print "next_pt: ", self.next_pt
+            self.planned_path = [] # reset the planned path
             self.planned_path.append(self.next_pt)
 
             bot_nx = self.next_pt
-            #while not path_tools.check_dest(bot_nx, ball_loc):
-                #goal_pt, turn_nx, distance_nx, ball_loc = path_tools.PathFind(bot_nx, self.bot_loc, self.veriBalls, self.veriObstacles, ball_loc)
-                #self.planned_path.append(goal_pt)
-                #bot_nx = goal_pt
+            turn_nx = turn
+            while not path_tools.check_dest(bot_nx, ball_loc, 100) and len(self.planned_path) < 4:
+                goal_pt, turn_nx, distance_nx, ball_loc = path_tools.PathFind(turn_nx, bot_nx, self.veriBalls, self.veriObstacles)
+                self.planned_path.append(goal_pt)
+                bot_nx = goal_pt
 
-            cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13,cv.RGB(150, 55, 150), 3, 8, 0)
+            cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 5,cv.RGB(150, 55, 150), 3, 8, 0)
             
             self.sync = self.sync + 1 # sync is a variable between 0 and 50 used to ensure path finding waits for the image processing
             if self.sync > 50:
@@ -224,9 +226,12 @@ class CvDisplayPanel(wx.Panel):
         else:
             self.CHECK_INDEX = self.CHECK_INDEX + 1
             processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
-            cv.Line(mask, (self.bot_loc[0], self.bot_loc[1]),(self.next_pt[0], self.next_pt[1]), cv.RGB(150, 55, 150), thickness=2, lineType=8, shift=0)
-            #for pt in self.planned_path:
-            cv.Circle(mask, (self.next_pt[0], self.next_pt[1]), 13, cv.RGB(150, 55, 150), 3, 8, 0)
+            bot_nx = self.bot_loc
+            for pt in self.planned_path:
+                cv.Line(mask, bot_nx,pt, cv.RGB(150, 55, 150), thickness=2, lineType=8, shift=0)
+                #for pt in self.planned_path:
+                cv.Circle(mask, pt, 5, cv.RGB(150, 55, 150), 3, 8, 0)
+                bot_nx = pt
 
         return mask
 
@@ -371,7 +376,7 @@ class Cameras(wx.Frame):
         try: 
 
             self.ser = serial.Serial(
-                port='COM16',
+                port='COM7',
                 baudrate=9600,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
