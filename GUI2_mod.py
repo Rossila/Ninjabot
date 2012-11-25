@@ -156,8 +156,8 @@ class CvDisplayPanel(wx.Panel):
         return sorted_list
 
     def roboOffset(self, bot_loc):
-        top = 20
-        bot = 45
+        top = 8
+        bot = 30
         y = bot_loc[1]
         x = bot_loc[0]
 
@@ -296,7 +296,7 @@ class Cameras(wx.Frame):
         self.goal1 = goal1
         self.goal2 = goal2
 
-        wx.Frame.__init__(self, parent, title=title, size=(1600,800))
+        wx.Frame.__init__(self, parent, title=title, size=(1400,900))
         
         self.display = wx.TextCtrl(self, -1, "YOLO",  style=wx.TE_MULTILINE, size=(200,150))
         box = wx.BoxSizer(wx.VERTICAL)
@@ -405,7 +405,7 @@ class Cameras(wx.Frame):
         try: 
 
             self.ser = serial.Serial(
-                port='COM7',
+                port='COM3',
                 baudrate=9600,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
@@ -639,7 +639,7 @@ class Cameras(wx.Frame):
             time.sleep(0.05)
             a = self.ser.read(50)
             self.display.WriteText("first read" + a + "\n")
-            time.sleep(3.00)
+            time.sleep(1.5)
             self.ser.flush()
             a = self.ser.read(120)
             self.display.WriteText("second read" + a + "\n")

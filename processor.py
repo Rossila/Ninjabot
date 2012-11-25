@@ -3,6 +3,7 @@ import cv2
 import sys
 import numpy as np
 import colorfilter
+import math
 
 d_red = cv.RGB(150, 55, 65)
 l_red = cv.RGB(250, 200, 200)
@@ -111,7 +112,7 @@ def find_circles(processed, storage, LOW):
     # @ min_radius and max_radius do exactly what to mean. They set the minimum and maximum radii the function searches for.
     
     try:
-        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 40.0, 200, 45, 5, 40) #great to add circle constraint sizes.
+        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 40.0, 200, 40, 5, 40) #great to add circle constraint sizes.
     except:
         pass
 
@@ -204,16 +205,24 @@ def perspective_transform(image_in,warp_coord):
 
 
 def robot_tracking(orig, squares):
+    # returns the distance between two inputted points
+    def distance_between_points(pt1, pt2):
+        return math.sqrt(math.pow((pt1[0]-pt2[0]),2) + math.pow((pt1[1]-pt2[1]),2))
+    
     red = colorfilter.red
     blue = colorfilter.blue
     green = colorfilter.green
     yellow = colorfilter.yellow
+    head = []
+    tail = []
+    other_head = []
+    other_tail = []
     head_coord = (0,0)
     tail_coord = (0,0)
     robo_tail = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     robo_head = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     # filter for all yellow and blue - everything else is black
-    robo_tail = colorFilterCombine(orig, red, red,1)
+    robo_tail = colorFilterCombine(orig, blue, blue,1)
     
 
     cv.Smooth(robo_tail, robo_tail, cv.CV_GAUSSIAN, 7, 7)
@@ -222,7 +231,7 @@ def robot_tracking(orig, squares):
     robo_tail_np = np.asarray(robo_tail[:,:])
     contours_robo_tail, hierarchy = cv2.findContours(robo_tail_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    robo_head = colorFilterCombine(orig, green, green,1)
+    robo_head = colorFilterCombine(orig, red, red,1)
     
     cv.Smooth(robo_head, robo_head, cv.CV_GAUSSIAN, 7, 7)
     
@@ -232,7 +241,7 @@ def robot_tracking(orig, squares):
     contours_robo_head, hierarchy = cv2.findContours(robo_head_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     for cnt in contours_robo_tail:
-        if cv2.contourArea(cnt) >= 1700:
+        if cv2.contourArea(cnt) >= 1500:
 
             moments = cv2.moments(cnt)
 
@@ -240,10 +249,18 @@ def robot_tracking(orig, squares):
                                   moments['m01']/moments['m00']); 
             
             #if massCenterModel
-            squares.append((massCenterModel,"robo_tail"))
+            tail.append(massCenterModel)
+        elif cv2.contourArea(cnt) >= 1000:
+            moments = cv2.moments(cnt)
+
+            massCenterModel = (moments['m10']/moments['m00'],  
+                                  moments['m01']/moments['m00']); 
+            
+            #if massCenterModel
+            other_tail.append(massCenterModel)
 
     for cnt in contours_robo_head:
-        if cv2.contourArea(cnt) >= 1900:
+        if cv2.contourArea(cnt) >= 1600:
 
             moments = cv2.moments(cnt)
 
@@ -251,41 +268,54 @@ def robot_tracking(orig, squares):
                                   moments['m01']/moments['m00']); 
             
 
-            squares.append((massCenterModel,"robo_head"))
-    #print squares
-    while squares:
-        head = squares.pop()
+            head.append(massCenterModel)
+        elif cv2.contourArea(cnt) >= 1000:
 
-        if (head[1] == "robo_tail"):
-            tail_coord = (int(head[0][0]),int(head[0][1]) )
-            cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
-            if (squares != []):
-                tail = squares.pop()
-                if(tail[1]== "robo_head"):
-                    head_coord = (int(tail[0][0]),int(tail[0][1]))
-                    cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
-                    cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
+            moments = cv2.moments(cnt)
 
-        if (head[1] == "robo_head"):
-            head_coord = (int(head[0][0]),int(head[0][1]))
-            cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
-            if (squares != []):
-                tail = squares.pop()
-                if(tail[1]== "robo_tail"):
-                    tail_coord = (int(tail[0][0]),int(tail[0][1]) )
-                    cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, l_red, -1, 8, 0)
-                    cv.Line(orig, (int(head[0][0]),int(head[0][1])), (int(tail[0][0]),int(tail[0][1])), d_red, thickness=2, lineType=8, shift=0)
-        try:
-            cv.Circle(orig, head_coord, 5, l_red, -1, 8, 0)
+            massCenterModel = (moments['m10']/moments['m00'],  
+                                  moments['m01']/moments['m00']); 
+            
 
-        except NameError:
-            print "fail"
+            other_head.append(massCenterModel)
 
-        try:
-            cv.Circle(orig, tail_coord, 5, d_red, -1, 8, 0)
+    if len(head) > 0 and len(tail) > 0 and distance_between_points(head[0], tail[0]) < 45:
+        print "distance_between_points(head[0], tail[0])", distance_between_points(head[0], tail[0])
+        head_pt = head.pop(0)
+        tail_pt = tail.pop(0)
+    elif len(head) > 1 and len(tail) > 0 and distance_between_points(head[1], tail[0]) < 45:
+        print "distance_between_points(head[1], tail[0])", distance_between_points(head[1], tail[0])
+        head_pt = head.pop(1)
+        tail_pt = tail.pop(0)
+    elif len(head) > 1 and len(tail) > 1 and distance_between_points(head[1], tail[1]) < 45:
+        print "distance_between_points(head[1], tail[1])", distance_between_points(head[1], tail[1])
+        head_pt = head.pop(1)
+        tail_pt = tail.pop(1)
+    elif len(head) > 0 and len(tail) > 1 and distance_between_points(head[0], tail[1]) < 45:
+        print "distance_between_points(head[0], tail[1])", distance_between_points(head[0], tail[1])
+        head_pt = head.pop(0)
+        tail_pt = tail.pop(1)
 
-        except NameError:
-            print "fail"
 
-    squares = []
+    try:
+        head_coord = (int(head_pt[0]),int(head_pt[1]))
+        cv.Circle(orig, (int(head_pt[0]),int(head_pt[1]) ), 1, l_red, -1, 8, 0)
+        tail_coord = (int(tail_pt[0]),int(tail_pt[1]) )
+        cv.Circle(orig, (int(tail_pt[0]),int(tail_pt[1]) ), 1, l_red, -1, 8, 0)
+        cv.Line(orig, (int(head_pt[0]),int(head_pt[1])), (int(tail_pt[0]),int(tail_pt[1])), d_red, thickness=2, lineType=8, shift=0)
+    except:
+        print "fail"
+
+    try:
+        cv.Circle(orig, head_coord, 5, l_red, -1, 8, 0)
+
+    except NameError:
+        print "fail"
+
+    try:
+        cv.Circle(orig, tail_coord, 5, d_red, -1, 8, 0)
+
+    except NameError:
+        print "fail"
+
     return tail_coord, head_coord
