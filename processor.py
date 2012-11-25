@@ -111,7 +111,7 @@ def find_circles(processed, storage, LOW):
     # @ min_radius and max_radius do exactly what to mean. They set the minimum and maximum radii the function searches for.
     
     try:
-        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 40.0, 200, 50, 5, 40) #great to add circle constraint sizes.
+        cv.HoughCircles(processed, storage, cv.CV_HOUGH_GRADIENT, 2, 40.0, 200, 45, 5, 40) #great to add circle constraint sizes.
     except:
         pass
 
@@ -131,7 +131,7 @@ def sort_circles(storage):
 
     for circle in circles:
         Radius, x, y = int(circle[0][2]), int(circle[0][0]), int(circle[0][1])
-        if Radius < 18:
+        if Radius < 16:
             #print "ball found at:", (x,y), "with radius", Radius
             balls.append((x,y))
         else: 
