@@ -427,7 +427,7 @@ class Cameras(wx.Frame):
         self.state = 0 
 
     def onNextFrame2(self, evt):
-        distanceconst = 12
+        distanceconst = 14
         if self.pause == -1:
             print "CURRENT STATE: ", self.state
 
@@ -438,7 +438,7 @@ class Cameras(wx.Frame):
             if self.state == 0: # state 0 is find and send the command to move towards the closest ball
                 print "self.display1.bot_loc: ", self.display1.bot_loc
                 if path_tools.check_dest(self.display1.bot_loc, (0,0), 30): # robot wasn't found move it forward a bit
-                    a = self.move(int(99))
+                    a = self.move(99)
                     a = self.turn(15)
                     return
                 results = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
@@ -461,13 +461,13 @@ class Cameras(wx.Frame):
                     a = self.capture(int(99*distanceconst))
                     print "Capture results: ", a
                 else:
-                    if distance > 400:
-                        distance = 400
+                    if distance > 500:
+                        distance = 500
                     if distance == 0:
                         distance = 10
                     a = self.move(int(distance*distanceconst))     #distanceconst is the correct value
                     self.display1.bot_loc = self.next_pt
-                if "capt" in a or "fail" in a: # check if robot has reached a ball
+                if "capt" in a: # check if robot has reached a ball
                     self.state = 2
                 else:
                     self.state = 0
@@ -512,12 +512,12 @@ class Cameras(wx.Frame):
                     angle = results[1]
                     distance = results[2]
                     ball_loc = results[3]
-                if angle !=0:
+                if angle > 6 or angle < -6:
                     a = self.turn(angle)
                 #if self.display1.bot_dir == 0 or self.display1.bot_dir == 90 or self.display1.bot_dir == 270:
                 else:
                     print "path_tools.distance_between_points(self.display1.bot_loc, ball_loc)/2: ", path_tools.distance_between_points(self.display1.bot_loc, ball_loc)*3/4
-                    self.shoot(path_tools.distance_between_points(self.display1.bot_loc, ball_loc)*3/4 * distanceconst)
+                    self.shoot(path_tools.distance_between_points(self.display1.bot_loc, ball_loc) * distanceconst)
                     self.state = 4
 
             if self.state == 4:
@@ -645,7 +645,7 @@ class Cameras(wx.Frame):
             self.display.WriteText("first read" + a + "\n")
             time.sleep(1.5)
             self.ser.flush()
-            a = self.ser.read(120)
+            a = self.ser.read(50)
             self.display.WriteText("second read" + a + "\n")
             self.ser.flush()
             return a
@@ -679,19 +679,14 @@ class Cameras(wx.Frame):
             self.ser.write(self.secondStraight) #1000 increments
             self.ser.flush()
             time.sleep(0.05)
-            a = self.ser.read(50)
+            a = self.ser.read(20)
             self.display.WriteText("first read" + a + "\n")
-            time.sleep(1.5)
+            time.sleep(0.05)
             self.ser.flush()
-            a = self.ser.read(120)
+            a = self.ser.read(20)
             self.display.WriteText("second read" + a + "\n")
             self.ser.flush()
             return a
-            """self.ser.flush()
-            a = self.ser.read(20)
-            self.display.WriteText(a + "\n")
-            self.ser.flush()
-            return a            """
 
         except serial.SerialException:
             self.display.WriteText("Com Port Error.")

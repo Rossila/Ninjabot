@@ -36,7 +36,7 @@ FIELD_HEIGHT = 800
 
 image = cv2.imread('empty.jpg')
 
-def PathFind(bot_dir, bot_loc, balls, obstacles, noBoundaries = False, multiple = 6):
+def PathFind(bot_dir, bot_loc, balls, obstacles, noBoundaries = False, multiple = 5):
     #bot_loc = (FIELD_WIDTH/2, rover_width)
     #bot_dir = 90
     next_pt = (0,0)
@@ -324,7 +324,7 @@ def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
 # Since the robot won't be able to make exact angle turns,
 # this function draws a purple line to estimate where the robot would be
 # if it could only turn TURN_ANGLE and travel TRAV_UNIT
-def robotTravel(bot_dir, bot_loc, next_pt, final_pt, multiple = 6):
+def robotTravel(bot_dir, bot_loc, next_pt, final_pt, multiple = 5):
     angle = line_angle(bot_loc, next_pt)
     # want turn to be between -180 to 180 degrees,
     # neg degrees are ccw
@@ -354,7 +354,7 @@ def robotTravel(bot_dir, bot_loc, next_pt, final_pt, multiple = 6):
 
 # Finds the next point that the robot should travel to
 # Creates a list of Point of interests and finds one that is possible
-def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir, noBoundaries = False, multiple = 6):
+def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir, noBoundaries = False, multiple = 5):
     intersections = [] # will hold the indexes of obstacles that the path intersects with
     POI = [] # the list of point of interests, the next point will be chosen from here
     checked_obs = {} # to prevent us from checking for POI on the same obstacle, use a boolean dictionary
