@@ -42,12 +42,6 @@ def PathFind(bot_dir, bot_loc, balls, obstacles, noBoundaries = False, multiple 
     next_pt = (0,0)
     last_pt = bot_loc
 
-    # Draw the balls and obstacles
-    '''for ball in balls:
-        draw_circle(ball_radius, ball[0], ball[1], d_red)
-
-    for obstacle in obstacles:
-        draw_circle(obstacle_radius, obstacle[0], obstacle[1], d_green)'''
     if balls == None or len(balls) == 0:
         return None
     else:
@@ -202,7 +196,7 @@ def checkIntersections(bot_loc, bot_dest, obstacles, intersections):
 # get the point of interests around the inputted obstacle
 # these points will be possible destinations from the rovers current location
 # all of these paths will be tangent to the obstacle and within the boundaries of the field
-def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
+def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI, noBoundaries = False):
     # theta is in radians
     def getSlope(theta):
         slope = math.sin(theta)/math.cos(theta)
@@ -249,8 +243,11 @@ def getPOI(last_pt, bot_loc, bot_dest, obstacle, POI):
 
     def checkValidPOI(x, y, obstacle):
         # check that the distance between the tangent point and the cent of the obstacle is approximately the radius
-        return int(distance_between_points((x, y), obstacle)) - obstacle_radius - rover_width <= 2 \
-            and x > rover_width and y > rover_width and x < FIELD_WIDTH - rover_width and y < FIELD_HEIGHT - rover_width 
+        if noBoundaries: # we don't want to take into account the field boundaries
+            return int(distance_between_points((x, y), obstacle)) - obstacle_radius - rover_width <= 2
+        else:
+            return int(distance_between_points((x, y), obstacle)) - obstacle_radius - rover_width <= 2 \
+                and x > rover_width and y > rover_width and x < FIELD_WIDTH - rover_width and y < FIELD_HEIGHT - rover_width 
             # check that x and y are within the field boundaries
 
     # will hold the POI's to be added
@@ -461,9 +458,12 @@ while index < len(balls):
         break
 
 # rinse and repeat until the robot reaches its destination
-while not check_dest(bot_loc,balls[index]):
-    next_pt = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
+while not check_dest(bot_loc,balls[index], 120):
+    results = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir)
 
+    next_pt = results[0]
+    turn = results[1]
+    distance = results[2]
     if next_pt == (0,0): # a next point wasn't found
         print "No next_pt was found, debug time"
         break
