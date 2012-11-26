@@ -187,7 +187,8 @@ class CvDisplayPanel(wx.Panel):
         # Find&Draw circles
         processor.find_circles(processed, storage, 100)
         # robot location detection
-        tail_coord, head_coord = processor.robot_tracking(mask, squares)
+        tail_coord, head_coord, bad_robot = processor.robot_tracking(mask, squares)
+        print bad_robot
         #print "HEAD AND TAIL: ", head_coord, tail_coord
         if head_coord == (0,0) or tail_coord == (0,0):
             pass #keep bot_loc as its last value
@@ -214,6 +215,9 @@ class CvDisplayPanel(wx.Panel):
 
             self.veriBalls = self.verify_circles(self.balls)
             self.veriObstacles = self.verify_circles(self.obstacles)
+            print "before:", self.veriObstacles
+            self.veriObstacles.append(bad_robot)
+            print "after:", self.veriObstacles
 
             processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
 

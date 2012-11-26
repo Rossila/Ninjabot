@@ -219,6 +219,7 @@ def robot_tracking(orig, squares):
     other_tail = []
     head_coord = (0,0)
     tail_coord = (0,0)
+    bad_robot = []
     robo_tail = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     robo_head = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     # filter for all yellow and blue - everything else is black
@@ -257,7 +258,7 @@ def robot_tracking(orig, squares):
                                   moments['m01']/moments['m00']); 
             
             #if massCenterModel
-            other_tail.append(massCenterModel)
+            bad_robot.append(massCenterModel)
 
     for cnt in contours_robo_head:
         if cv2.contourArea(cnt) >= 1600:
@@ -277,7 +278,7 @@ def robot_tracking(orig, squares):
                                   moments['m01']/moments['m00']); 
             
 
-            other_head.append(massCenterModel)
+            bad_robot.append(massCenterModel)
 
     if len(head) > 0 and len(tail) > 0 and distance_between_points(head[0], tail[0]) < 45:
         print "distance_between_points(head[0], tail[0])", distance_between_points(head[0], tail[0])
@@ -318,4 +319,4 @@ def robot_tracking(orig, squares):
     except NameError:
         print "fail"
 
-    return tail_coord, head_coord
+    return tail_coord, head_coord, bad_robot
