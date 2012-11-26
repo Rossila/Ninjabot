@@ -8,6 +8,7 @@ import math
 d_red = cv.RGB(150, 55, 65)
 l_red = cv.RGB(250, 200, 200)
 d_green = cv.RGB(55, 150, 65)
+d_purple = cv.RGB(150, 55, 150)
 
 def autocalibrate(orig, storage):
     
@@ -224,11 +225,24 @@ def robot_tracking(orig, squares):
     tail = []
     other_head = []
     other_tail = []
+    enemy_robot = []
     head_coord = (0,0)
     tail_coord = (0,0)
+    bot_found = False
     robo_tail = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     robo_head = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
+
+    enemy_body = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     # filter for all yellow and blue - everything else is black
+    enemy_body = colorFilterCombine(orig, red, red,1)
+    
+
+    cv.Smooth(enemy_body, enemy_body, cv.CV_GAUSSIAN, 7, 7)
+    
+    
+    enemy_body_np = np.asarray(enemy_body[:,:])
+    contours_enemy_body, hierarchy = cv2.findContours(enemy_body_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
     robo_tail = colorFilterCombine(orig, blue, blue,1)
     
 
@@ -249,7 +263,7 @@ def robot_tracking(orig, squares):
 
     for cnt in contours_robo_tail:
         #print "tail: cv2.contourArea(cnt): ", cv2.contourArea(cnt)
-        if cv2.contourArea(cnt) >= 1000:
+        if cv2.contourArea(cnt) >= 1700:
 
             moments = cv2.moments(cnt)
 
@@ -258,18 +272,18 @@ def robot_tracking(orig, squares):
             
             #if massCenterModel
             tail.append(massCenterModel)
-        elif cv2.contourArea(cnt) >= 1000:
+        elif cv2.contourArea(cnt) >= 300:
             moments = cv2.moments(cnt)
 
             massCenterModel = (moments['m10']/moments['m00'],  
                                   moments['m01']/moments['m00']); 
             
             #if massCenterModel
-            other_tail.append(massCenterModel)
+            enemy_robot.append(massCenterModel)
 
     for cnt in contours_robo_head:
         #print "head: cv2.contourArea(cnt): ", cv2.contourArea(cnt)
-        if cv2.contourArea(cnt) >= 1000:
+        if cv2.contourArea(cnt) >= 1700:
 
             moments = cv2.moments(cnt)
 
@@ -278,7 +292,7 @@ def robot_tracking(orig, squares):
             
 
             head.append(massCenterModel)
-        elif cv2.contourArea(cnt) >= 1000:
+        elif cv2.contourArea(cnt) >= 300:
 
             moments = cv2.moments(cnt)
 
@@ -286,35 +300,56 @@ def robot_tracking(orig, squares):
                                   moments['m01']/moments['m00']); 
             
 
-            other_head.append(massCenterModel)
+            enemy_robot.append(massCenterModel)
 
+    for cnt in contours_enemy_body:
+        #print "head: cv2.contourArea(cnt): ", cv2.contourArea(cnt)
+        if cv2.contourArea(cnt) >= 300:
+
+            moments = cv2.moments(cnt)
+
+            massCenterModel = (moments['m10']/moments['m00'],  
+                                  moments['m01']/moments['m00']); 
+            
+
+            enemy_robot.append(massCenterModel)
+        else:
+            pass
+    
+    #print "enemy_robot", enemy_robot
     #print "head: ", head
     #print "tail: ", tail
+    for bot in enemy_robot:
+        cv.Circle(orig, (int(bot[0]), int(bot[1])), 4, d_purple, -1, 8, 0)
 
-    if len(head) > 0 and len(tail) > 0 and distance_between_points(head[0], tail[0]) < 55:
-        #print "distance_between_points(head[0], tail[0])", distance_between_points(head[0], tail[0])
-        head_pt = head.pop(0)
-        tail_pt = tail.pop(0)
-    elif len(head) > 1 and len(tail) > 0 and distance_between_points(head[1], tail[0]) < 55:
-        #print "distance_between_points(head[1], tail[0])", distance_between_points(head[1], tail[0])
-        head_pt = head.pop(1)
-        tail_pt = tail.pop(0)
-    elif len(head) > 1 and len(tail) > 1 and distance_between_points(head[1], tail[1]) < 55:
-        #print "distance_between_points(head[1], tail[1])", distance_between_points(head[1], tail[1])
-        head_pt = head.pop(1)
-        tail_pt = tail.pop(1)
-    elif len(head) > 0 and len(tail) > 1 and distance_between_points(head[0], tail[1]) < 55:
-        #print "distance_between_points(head[0], tail[1])", distance_between_points(head[0], tail[1])
-        head_pt = head.pop(0)
-        tail_pt = tail.pop(1)
-    else:
+    if len(head) > 0:
+        h = head[0]
+    if len(head) > 1:
+        h2 = head[1]
+    for t in tail:
+        if len(head) > 0 and distance_between_points(h, t) < 55:
+            #print "distance beteen h and t: ", distance_between_points(h, t)
+            head_pt = h
+            tail_pt = t
+            bot_found = True
+            break
+        if len(head) > 1 and distance_between_points(h2, t) < 55:
+            #print "distance between h2 and t: ", distance_between_points(h2, t)
+            head_pt = h2
+            tail_pt = t
+            bot_found = True
+            break
+
+    if not bot_found:
         try:
             #print "distance_between_points(head[0], tail[0])", distance_between_points(head[0], tail[0])
             cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
             cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, d_red, -1, 8, 0)
         except:
             print "haven't found anything"
-        return tail_coord, head_coord
+
+        #print "enemy_robot", enemy_robot
+        return tail_coord, head_coord, enemy_robot
 
     try:
         head_coord = (int(head_pt[0]),int(head_pt[1]))
@@ -325,4 +360,5 @@ def robot_tracking(orig, squares):
     except:
         print "failed"
 
-    return tail_coord, head_coord
+    print "enemy_robot", enemy_robot
+    return tail_coord, head_coord, enemy_robot

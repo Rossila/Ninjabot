@@ -21,8 +21,8 @@ d_purple = cv.RGB(150, 55, 150)
 travelled_paths = []
 
 ball_radius = 18
-obstacle_radius = 20
-rover_width = 60
+obstacle_radius = 30
+rover_width = 50
 
 # the radius to avoid is the sum of the obstacle_radius and rover_width.
 # though it should be rover_width/2, we'll use rover_width to be on the safe side
