@@ -229,6 +229,7 @@ def robot_tracking(orig, squares):
     head_coord = (0,0)
     tail_coord = (0,0)
     bot_found = False
+
     robo_tail = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
     robo_head = cv.CreateImage((orig.width,orig.height), cv.IPL_DEPTH_8U, 1)
 
@@ -281,6 +282,7 @@ def robot_tracking(orig, squares):
             #if massCenterModel
             enemy_robot.append(massCenterModel)
 
+
     for cnt in contours_robo_head:
         #print "head: cv2.contourArea(cnt): ", cv2.contourArea(cnt)
         if cv2.contourArea(cnt) >= 1700:
@@ -299,7 +301,6 @@ def robot_tracking(orig, squares):
             massCenterModel = (moments['m10']/moments['m00'],  
                                   moments['m01']/moments['m00']); 
             
-
             enemy_robot.append(massCenterModel)
 
     for cnt in contours_enemy_body:
@@ -310,7 +311,7 @@ def robot_tracking(orig, squares):
 
             massCenterModel = (moments['m10']/moments['m00'],  
                                   moments['m01']/moments['m00']); 
-            
+
 
             enemy_robot.append(massCenterModel)
         else:
@@ -359,6 +360,5 @@ def robot_tracking(orig, squares):
         cv.Line(orig, (int(head_pt[0]),int(head_pt[1])), (int(tail_pt[0]),int(tail_pt[1])), d_red, thickness=2, lineType=8, shift=0)
     except:
         print "failed"
-
-    print "enemy_robot", enemy_robot
+    #print "enemy_robot", enemy_robot
     return tail_coord, head_coord, enemy_robot

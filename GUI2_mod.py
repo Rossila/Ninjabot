@@ -193,6 +193,7 @@ class CvDisplayPanel(wx.Panel):
             print "robot_tracking exception"
             tail_coord, head_coord,  = processor.robot_tracking(mask, squares)
             enemy_robot = [(0,0)]
+
         #print "HEAD AND TAIL: ", head_coord, tail_coord
         if head_coord == (0,0) or tail_coord == (0,0):
             pass #keep bot_loc as its last value
@@ -223,6 +224,7 @@ class CvDisplayPanel(wx.Panel):
             for g in enemy_robot:
                 self.veriObstacles.append((int(g[0]),int(g[1])))
             #print "after", self.veriObstacles
+
             processor.draw_circles(self.veriBalls, self.veriObstacles, mask)
 
             results = path_tools.PathFind(self.bot_dir, self.bot_loc, self.veriBalls, self.veriObstacles)
