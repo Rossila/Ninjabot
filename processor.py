@@ -43,6 +43,8 @@ def colorFilter(img, color, calibrate):
 
     imgHSV = cv.CreateImage(cv.GetSize(img),8,3)
     cv.CvtColor(img, imgHSV, cv.CV_BGR2HSV)
+    imgmin = cv.CreateImage(cv.GetSize(img),8,1)
+    imgmax = cv.CreateImage(cv.GetSize(img),8,1)
 
     """
     if color == "yellow":
@@ -64,7 +66,12 @@ def colorFilter(img, color, calibrate):
 
     imgFiltered = cv.CreateImage(cv.GetSize(img),8,1)
 
-    cv.InRangeS(imgHSV, color[0], color[1], imgFiltered)
+    if color[0][0] < color[1][0]:
+        cv.InRangeS(imgHSV, color[0], color[1], imgFiltered)
+    else:
+        cv.InRangeS(imgHSV, (0,color[0][1],color[0][2]), (color[0][0], color[1][1], color[1][2]), imgmin)
+        cv.InRangeS(imgHSV, (color[1][0], color[0][1], color[0][2]), (255,color[1][1],color[1][2]), imgmax)
+        cv.Add(imgmin, imgmax, imgFiltered)
 
     return imgFiltered
 
@@ -232,7 +239,7 @@ def robot_tracking(orig, squares):
     robo_tail_np = np.asarray(robo_tail[:,:])
     contours_robo_tail, hierarchy = cv2.findContours(robo_tail_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    robo_head = colorFilterCombine(orig, red, red,1)
+    robo_head = colorFilterCombine(orig, green, green,1)
     
     cv.Smooth(robo_head, robo_head, cv.CV_GAUSSIAN, 7, 7)
     
@@ -242,7 +249,8 @@ def robot_tracking(orig, squares):
     contours_robo_head, hierarchy = cv2.findContours(robo_head_np, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     for cnt in contours_robo_tail:
-        if cv2.contourArea(cnt) >= 1500:
+        #print "tail: cv2.contourArea(cnt): ", cv2.contourArea(cnt)
+        if cv2.contourArea(cnt) >= 1000:
 
             moments = cv2.moments(cnt)
 
@@ -261,7 +269,8 @@ def robot_tracking(orig, squares):
             bad_robot.append(massCenterModel)
 
     for cnt in contours_robo_head:
-        if cv2.contourArea(cnt) >= 1600:
+        #print "head: cv2.contourArea(cnt): ", cv2.contourArea(cnt)
+        if cv2.contourArea(cnt) >= 1000:
 
             moments = cv2.moments(cnt)
 
@@ -280,43 +289,41 @@ def robot_tracking(orig, squares):
 
             bad_robot.append(massCenterModel)
 
-    if len(head) > 0 and len(tail) > 0 and distance_between_points(head[0], tail[0]) < 45:
-        print "distance_between_points(head[0], tail[0])", distance_between_points(head[0], tail[0])
-        head_pt = head.pop(0)
-        tail_pt = tail.pop(0)
-    elif len(head) > 1 and len(tail) > 0 and distance_between_points(head[1], tail[0]) < 45:
-        print "distance_between_points(head[1], tail[0])", distance_between_points(head[1], tail[0])
-        head_pt = head.pop(1)
-        tail_pt = tail.pop(0)
-    elif len(head) > 1 and len(tail) > 1 and distance_between_points(head[1], tail[1]) < 45:
-        print "distance_between_points(head[1], tail[1])", distance_between_points(head[1], tail[1])
-        head_pt = head.pop(1)
-        tail_pt = tail.pop(1)
-    elif len(head) > 0 and len(tail) > 1 and distance_between_points(head[0], tail[1]) < 45:
-        print "distance_between_points(head[0], tail[1])", distance_between_points(head[0], tail[1])
-        head_pt = head.pop(0)
-        tail_pt = tail.pop(1)
+    #print "head: ", head
+    #print "tail: ", tail
 
+    if len(head) > 0 and len(tail) > 0 and distance_between_points(head[0], tail[0]) < 55:
+        #print "distance_between_points(head[0], tail[0])", distance_between_points(head[0], tail[0])
+        head_pt = head.pop(0)
+        tail_pt = tail.pop(0)
+    elif len(head) > 1 and len(tail) > 0 and distance_between_points(head[1], tail[0]) < 55:
+        #print "distance_between_points(head[1], tail[0])", distance_between_points(head[1], tail[0])
+        head_pt = head.pop(1)
+        tail_pt = tail.pop(0)
+    elif len(head) > 1 and len(tail) > 1 and distance_between_points(head[1], tail[1]) < 55:
+        #print "distance_between_points(head[1], tail[1])", distance_between_points(head[1], tail[1])
+        head_pt = head.pop(1)
+        tail_pt = tail.pop(1)
+    elif len(head) > 0 and len(tail) > 1 and distance_between_points(head[0], tail[1]) < 55:
+        #print "distance_between_points(head[0], tail[1])", distance_between_points(head[0], tail[1])
+        head_pt = head.pop(0)
+        tail_pt = tail.pop(1)
+    else:
+        try:
+            #print "distance_between_points(head[0], tail[0])", distance_between_points(head[0], tail[0])
+            cv.Circle(orig, (int(head[0][0]),int(head[0][1]) ), 1, l_red, -1, 8, 0)
+            cv.Circle(orig, (int(tail[0][0]),int(tail[0][1]) ), 1, d_red, -1, 8, 0)
+        except:
+            print "haven't found anything"
+        return tail_coord, head_coord
 
     try:
         head_coord = (int(head_pt[0]),int(head_pt[1]))
-        cv.Circle(orig, (int(head_pt[0]),int(head_pt[1]) ), 1, l_red, -1, 8, 0)
+        cv.Circle(orig, (int(head_pt[0]),int(head_pt[1]) ), 4, l_red, -1, 8, 0)
         tail_coord = (int(tail_pt[0]),int(tail_pt[1]) )
-        cv.Circle(orig, (int(tail_pt[0]),int(tail_pt[1]) ), 1, l_red, -1, 8, 0)
+        cv.Circle(orig, (int(tail_pt[0]),int(tail_pt[1]) ), 4, l_red, -1, 8, 0)
         cv.Line(orig, (int(head_pt[0]),int(head_pt[1])), (int(tail_pt[0]),int(tail_pt[1])), d_red, thickness=2, lineType=8, shift=0)
     except:
-        print "fail"
-
-    try:
-        cv.Circle(orig, head_coord, 5, l_red, -1, 8, 0)
-
-    except NameError:
-        print "fail"
-
-    try:
-        cv.Circle(orig, tail_coord, 5, d_red, -1, 8, 0)
-
-    except NameError:
-        print "fail"
+        print "failed"
 
     return tail_coord, head_coord, bad_robot
