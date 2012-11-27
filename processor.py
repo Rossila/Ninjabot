@@ -140,7 +140,7 @@ def sort_circles(storage):
 
     for circle in circles:
         Radius, x, y = int(circle[0][2]), int(circle[0][0]), int(circle[0][1])
-        if Radius < 16:
+        if Radius < 14:
             #print "ball found at:", (x,y), "with radius", Radius
             balls.append((x,y))
         else: 

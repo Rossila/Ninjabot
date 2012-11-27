@@ -215,7 +215,7 @@ class CvDisplayPanel(wx.Panel):
         
         #cv.ShowImage("did it find circles?", mask)
 
-        if self.CHECK_INDEX == 6: # circle finding is compared over the last 5 frames
+        if self.CHECK_INDEX == 5: # circle finding is compared over the last 5 frames
             self.CHECK_INDEX = 0
 
             self.veriBalls = self.verify_circles(self.balls)
@@ -244,7 +244,7 @@ class CvDisplayPanel(wx.Panel):
             try:
                 bot_nx = self.next_pt
                 turn_nx = turn
-                while not path_tools.check_dest(bot_nx, ball_loc, 100) and len(self.planned_path) < 3:
+                while not path_tools.check_dest(bot_nx, ball_loc, 100) and len(self.planned_path) < 4:
                     goal_pt, turn_nx, distance_nx, ball_loc = path_tools.PathFind(turn_nx, bot_nx, self.veriBalls, self.veriObstacles)
                     self.planned_path.append(goal_pt)
                     bot_nx = goal_pt

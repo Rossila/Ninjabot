@@ -52,7 +52,8 @@ def PathFind(bot_dir, bot_loc, balls, obstacles, noBoundaries = False, multiple 
 
     while index < len(balls):
         intersections = []
-        intersections = checkIntersections(balls[index], balls[index], obstacles, intersections)
+        intersections = checkIntersections(balls[index], balls[index], obstacles, intersections, 20)
+        print "intersections: ", intersections
         if len(intersections) != 0: 
             index = index + 1
             if index == len(balls):
@@ -155,7 +156,7 @@ def intersect(ln1_start, ln1_end, ln2_start, ln2_end):
 
 # checks if the path bot_loc to bot_dest intersects with any obstacles
 # Returns: appends the index of intersecting obstacles in intersections list
-def checkIntersections(bot_loc, bot_dest, obstacles, intersections):
+def checkIntersections(bot_loc, bot_dest, obstacles, intersections, offset = 10):
     def findConstants(bot_loc, bot_dest, distance):
         # find x_dspl & y_dspl s.t.
         # y_dspl/x_dspl = slope and x_dspl^2 + y_dspl^2 = distance^2
@@ -182,7 +183,7 @@ def checkIntersections(bot_loc, bot_dest, obstacles, intersections):
             y_dspl = a * diff_y
         return x_dspl, y_dspl
 
-    x_dspl, y_dspl = findConstants(bot_loc, bot_dest, avoid_radius - 10) # since the avoid_radius is exaggerated, can make it slightly more lenient when checking for intersections
+    x_dspl, y_dspl = findConstants(bot_loc, bot_dest, avoid_radius - offset) # since the avoid_radius is exaggerated, can make it slightly more lenient when checking for intersections
     for index, obstacle in enumerate(obstacles):
         obs_proj1 = (int(obstacle[0] + x_dspl), int(obstacle[1] + y_dspl)) # there are two projections coming out of the obstacle
         obs_proj2 = (int(obstacle[0] + -1*x_dspl), int(obstacle[1] + -1*y_dspl)) # one in each direction
