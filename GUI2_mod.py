@@ -36,6 +36,8 @@ class CvDisplayPanel(wx.Panel):
 
     sync = 0
 
+    bot_found = False
+
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
@@ -187,6 +189,8 @@ class CvDisplayPanel(wx.Panel):
         # Find&Draw circles
         processor.find_circles(processed, storage, 100)
         # robot location detection
+
+        self.bot_found = False
         try:
             tail_coord, head_coord, enemy_robot = processor.robot_tracking(mask, squares)
         except:
@@ -198,6 +202,7 @@ class CvDisplayPanel(wx.Panel):
         if head_coord == (0,0) or tail_coord == (0,0):
             pass #keep bot_loc as its last value
         else:
+            self.bot_found = True
             self.bot_loc = ((head_coord[0] + tail_coord[0])/2,(head_coord[1] + tail_coord[1])/2)
             #offset the bot_loc
             self.bot_loc = self.roboOffset(self.bot_loc)
@@ -436,8 +441,19 @@ class Cameras(wx.Frame):
     def onAuto(self, event):
         self.state = 0 
 
+    def adjustangle(self, turn):
+        if turn > 180:
+            turn = -1 * (360 - turn)
+        elif turn < -180:
+            turn = 360 + turn
+        return turn
+
     def onNextFrame2(self, evt):
-        distanceconst = 14
+        distanceconst = 12.5
+        #print "self.goal1: ", self.goal1
+        #print "self.goal2: ", self.goal2
+        if self.state == -1:
+            return
         if self.pause == -1:
             print "CURRENT STATE: ", self.state
 
@@ -445,12 +461,22 @@ class Cameras(wx.Frame):
                 return
             else:
                 self.sync = self.display1.sync
+            if self.display1.bot_found == False: # robot wasn't found move it forward a bit past the middle
+                print "self.display1.bot_loc: ", self.display1.bot_loc
+                print "self.display1.bot_dir: ", self.display1.bot_dir
+                angle1 = self.adjustangle(270 - self.display1.bot_dir)
+                angle2 = self.adjustangle(90 - self.display1.bot_dir)
+
+                if abs(angle1) < abs(angle2):
+                    self.turn(angle1)
+                    self.display1.bot_dir = 270
+                else:
+                    self.turn(angle2)
+                    self.display1.bot_dir = 90
+                a = self.move(int(50*distanceconst))
+                return
             if self.state == 0: # state 0 is find and send the command to move towards the closest ball
                 print "self.display1.bot_loc: ", self.display1.bot_loc
-                if path_tools.check_dest(self.display1.bot_loc, (0,0), 30): # robot wasn't found move it forward a bit
-                    a = self.move(99)
-                    a = self.turn(15)
-                    return
                 results = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
                 if results == None:
                     angle = 0
@@ -461,31 +487,33 @@ class Cameras(wx.Frame):
                     angle = results[1]
                     distance = results[2]
                     ball_loc = results[3]
+                    fn_angle = results[4]
                 if self.next_pt == (0,0):
                     print "NO PATH FOUND !!!!!!!"
                     return
                 self.state = 1 # state 1 indicates the robot is currently travelling to its next point
                 if angle != 0:
                     a = self.turn(angle)
+                    self.display1.bot_dir = fn_angle
                 if path_tools.check_dest(self.display1.bot_loc, ball_loc, 100): # try capturing
                     a = self.capture(int(99*distanceconst))
                     print "Capture results: ", a
-                else:
-                    if distance > 300:
-                        distance = 300
-                    if distance == 0:
-                        distance = 10
-                    a = self.move(int(distance*distanceconst))     #distanceconst is the correct value
-                    self.display1.bot_loc = self.next_pt
-                if "capt" in a: # check if robot has reached a ball
                     self.state = 2
                     return
                 else:
-                    self.state = 0
+                    if distance > 300:
+                        distance = 300
+                    a = self.move(int(distance*distanceconst))     #distanceconst is the correct value
+                    self.display1.bot_loc = self.next_pt
+                """if "capt" in a: # check if robot has reached a ball
+                    self.state = 2
                     return
+                else:"""
+                self.state = 0
+                return
 
             if self.state == 2:
-                goals = [self.goal1, self.goal2]
+                goals = [self.goal1, self.goal1]
                 #goals = [self.goal2]
                 results = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, goals, self.display1.veriObstacles, False, 3)
                 if results == None:
@@ -497,8 +525,10 @@ class Cameras(wx.Frame):
                     angle = results[1]
                     distance = results[2]
                     ball_loc = results[3]
+                    fn_angle = results[4]
                 if angle != 0:
                     a = self.turn(angle)
+                    self.display1.bot_dir = fn_angle
 
                 print "state 2, self.next_pt is: ", self.next_pt
             
@@ -510,12 +540,10 @@ class Cameras(wx.Frame):
                 else:
                     if distance > 200:
                         distance = 200
-                    if distance == 0:
-                        distance = 10
                     a = self.move(int(distance*distanceconst))     #distanceconst is the correct value
                     self.display1.bot_loc = self.next_pt
             if self.state == 3: # shoot the ball!
-                goals = [(400, 800), (400, 0)]
+                goals = [(400, 0), (400, 0)]
                 #goals = [(400, 0)]
                 results = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, goals, self.display1.veriObstacles, True, 0)
                 if results == None:
@@ -527,13 +555,19 @@ class Cameras(wx.Frame):
                     angle = results[1]
                     distance = results[2]
                     ball_loc = results[3]
+                    fn_angle = results[4]
                 print "self.next_pt in pathfinding: ", self.next_pt
                 if angle > 6 or angle < -6:
                     a = self.turn(angle)
+                    self.display1.bot_dir = fn_angle
                 #if self.display1.bot_dir == 0 or self.display1.bot_dir == 90 or self.display1.bot_dir == 270:
                 else:
-                    print "path_tools.distance_between_points(self.display1.bot_loc, ball_loc)/2: ", path_tools.distance_between_points(self.display1.bot_loc, ball_loc)*3/4
-                    self.shoot(int(path_tools.distance_between_points(self.display1.bot_loc, ball_loc) * 3/4 * distanceconst))
+                    if path_tools.distance_between_points(self.display1.bot_loc, ball_loc) < 80:
+                        self.move(int(- 80 * distanceconst))
+                        self.shoot(int((path_tools.distance_between_points(self.display1.bot_loc, ball_loc) * 3/4 + 80) * distanceconst))
+                    else:
+                    #print "path_tools.distance_between_points(self.display1.bot_loc, ball_loc)/2: ", path_tools.distance_between_points(self.display1.bot_loc, ball_loc)*3/4
+                        self.shoot(int(path_tools.distance_between_points(self.display1.bot_loc, ball_loc) * 3/4 * distanceconst))
                     self.state = 4
                     return
 
@@ -550,8 +584,19 @@ class Cameras(wx.Frame):
         self.turn(angle)
 
     def OnUp(self, event):
-        self.move(1000)
+        self.capture(1000)
         """
+        self.turn(-93)
+        self.move(7000)
+        self.turn(93)
+        self.move(5000)
+        self.turn(-93)
+        self.capture(1000)
+        #self.move(3000)
+        #self.turn(95)
+        #self.move(2000)
+
+        
         self.display.WriteText("Sending Command: Forward\n")
         try: 
             self.ser.write('f')
@@ -601,6 +646,16 @@ class Cameras(wx.Frame):
             distance = 9900
         self.secondStraight = int(math.floor(distance/1000))
         self.firstStraight = int(math.floor((distance-1000*self.secondStraight)/100))
+
+    def dance(self):
+        self.display.WriteText("Sending Command: Dance \n")
+        try: 
+            self.ser.write('x')
+            self.ser.flush()
+        except:
+            print "Robot too shy"
+        return
+         
 
     def move(self,distance):
 
@@ -747,10 +802,10 @@ class Cameras(wx.Frame):
             self.display.WriteText("Command: Turn Failed.\n")
 
     def OnLeft(self, event):
-        self.turn(-90)
+        self.turn(-45)
 
     def OnRight(self, event):
-        self.turn(90)
+        self.turn(45)
         
     def OnColor(self,event):
         cv.ShowImage("colorplz", orig)

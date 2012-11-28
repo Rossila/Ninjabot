@@ -61,8 +61,8 @@ def PathFind(bot_dir, bot_loc, balls, obstacles, noBoundaries = False, multiple 
         else: # if there are no intersections, this ball is fine
             break
 
-    next_pt, turn, distance = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir, noBoundaries, multiple)
-    return next_pt, turn, distance, balls[index]
+    next_pt, turn, distance, angle = findPath(last_pt, bot_loc, next_pt, obstacles, balls[index], bot_dir, noBoundaries, multiple)
+    return next_pt, turn, distance, balls[index], angle
 
 def draw_line(start, end, color):
     cv2.line(image, start, end, color, thickness = 1, lineType=8, shift=0)
@@ -348,7 +348,7 @@ def robotTravel(bot_dir, bot_loc, next_pt, final_pt, multiple = 5):
 
     print "bot_loc: ", bot_loc, "turn: ", turn, "distance: ", distance, "we want it to move from angle: ", angle - turn, "to angle: ", angle 
     print "ROBOT DIRECTIONS: turn", turn, "move forward", distance
-    return draw_line_polar(bot_loc, angle, distance), turn, distance # return the end point
+    return draw_line_polar(bot_loc, angle, distance), turn, distance, angle # return the end point
 
 # Finds the next point that the robot should travel to
 # Creates a list of Point of interests and finds one that is possible
@@ -411,12 +411,12 @@ def findPath(last_pt, bot_loc, next_pt, obstacles, bot_dest, bot_dir, noBoundari
     #print "next_pt before altering: ", next_pt
     if check_dest(next_pt, bot_dest): # check if the next point is the final point
         # estimates where the robot will actually go
-        next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, True, multiple) # adjust the path
+        next_pt, turn, distance, angle = robotTravel(bot_dir, bot_loc, next_pt, True, multiple) # adjust the path
     else:
-        next_pt, turn, distance = robotTravel(bot_dir, bot_loc, next_pt, False, multiple) # adjust the path
+        next_pt, turn, distance, angle = robotTravel(bot_dir, bot_loc, next_pt, False, multiple) # adjust the path
 
     #print"next_pt after altering: ", next_pt
-    return next_pt, turn, distance
+    return next_pt, turn, distance, angle
 
 # check if this point will hit the edge of the field
 def check_boundaries((x,y)):
