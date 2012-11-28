@@ -37,6 +37,7 @@ class CvDisplayPanel(wx.Panel):
     sync = 0
 
     bot_found = False
+    bot_lost = 0
 
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
@@ -449,7 +450,7 @@ class Cameras(wx.Frame):
         return turn
 
     def onNextFrame2(self, evt):
-        distanceconst = 12.5
+        distanceconst = 12.2
         #print "self.goal1: ", self.goal1
         #print "self.goal2: ", self.goal2
         if self.state == -1:
@@ -462,6 +463,10 @@ class Cameras(wx.Frame):
             else:
                 self.sync = self.display1.sync
             if self.display1.bot_found == False: # robot wasn't found move it forward a bit past the middle
+                if self.display1.bot_lost == 2:
+                    self.turn(90)
+                    self.move(int(50*distanceconst))
+                    return
                 print "self.display1.bot_loc: ", self.display1.bot_loc
                 print "self.display1.bot_dir: ", self.display1.bot_dir
                 angle1 = self.adjustangle(270 - self.display1.bot_dir)
@@ -474,7 +479,10 @@ class Cameras(wx.Frame):
                     self.turn(angle2)
                     self.display1.bot_dir = 90
                 a = self.move(int(50*distanceconst))
+                self.display1.bot_lost = self.display1.bot_lost + 1
                 return
+            else:
+                self.display1.bot_lost = 0
             if self.state == 0: # state 0 is find and send the command to move towards the closest ball
                 print "self.display1.bot_loc: ", self.display1.bot_loc
                 results = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
@@ -717,7 +725,7 @@ class Cameras(wx.Frame):
             time.sleep(0.05)
             a = self.ser.read(50)
             self.display.WriteText("first read" + a + "\n")
-            time.sleep(1.5)
+            time.sleep(0.05)
             self.ser.flush()
             a = self.ser.read(50)
             self.display.WriteText("second read" + a + "\n")
