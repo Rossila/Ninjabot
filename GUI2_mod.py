@@ -327,7 +327,8 @@ class Cameras(wx.Frame):
                         (wx.Button(self, 7, 'Warp') , 0, wx.EXPAND),
                         (wx.Button(self, 8, 'Auto') , 0, wx.EXPAND),
                         (wx.Button(self, 9, 'Color') , 0, wx.EXPAND),
-                        (wx.Button(self, 10, 'Pause') , 0, wx.EXPAND)])
+                        (wx.Button(self, 10, 'Pause') , 0, wx.EXPAND),
+                        (wx.Button(self, 11, 'Task 1') , 0, wx.EXPAND)])
         box.Add(self.display, 1, wx.ALL | wx.ALIGN_RIGHT)
         box.Add(buttons, 1, wx.ALL | wx.ALIGN_RIGHT)
 
@@ -355,6 +356,7 @@ class Cameras(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.onAuto, id=8)
         self.Bind(wx.EVT_BUTTON, self.OnColor, id=9)
         self.Bind(wx.EVT_BUTTON, self.OnPause, id=10)
+        self.Bind(wx.EVT_BUTTON, self.onTask1, id=11)
 
         self.CreateStatusBar() # A Statusbar in the bottom of the window
 
@@ -441,6 +443,9 @@ class Cameras(wx.Frame):
 
     def onAuto(self, event):
         self.state = 0 
+
+    def onTask1(self,event):
+        self.state = 2
 
     def adjustangle(self, turn):
         if turn > 180:
