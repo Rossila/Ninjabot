@@ -319,11 +319,11 @@ class Cameras(wx.Frame):
         box = wx.BoxSizer(wx.VERTICAL)
         buttons = wx.GridSizer(3, 4, 1, 1)
         buttons.AddMany([(wx.Button(self, 1, 'Stop') , 0, wx.EXPAND),
-                        (wx.Button(self, 2, 'Up') , 0, wx.EXPAND),
+                        #(wx.Button(self, 2, 'Up') , 0, wx.EXPAND),
                         (wx.Button(self, 3, 'Start') , 0, wx.EXPAND),
-                        (wx.Button(self, 4, 'Left') , 0, wx.EXPAND),
-                        (wx.Button(self, 5, 'Down') , 0, wx.EXPAND),
-                        (wx.Button(self, 6, 'Right') , 0, wx.EXPAND),
+                        #(wx.Button(self, 4, 'Left') , 0, wx.EXPAND),
+                        #(wx.Button(self, 5, 'Down') , 0, wx.EXPAND),
+                        #(wx.Button(self, 6, 'Right') , 0, wx.EXPAND),
                         (wx.Button(self, 7, 'Warp') , 0, wx.EXPAND),
                         (wx.Button(self, 8, 'Auto') , 0, wx.EXPAND),
                         (wx.Button(self, 9, 'Color') , 0, wx.EXPAND),
@@ -347,11 +347,11 @@ class Cameras(wx.Frame):
         self.Centre()
 
         self.Bind(wx.EVT_BUTTON, self.OnStop, id=1)
-        self.Bind(wx.EVT_BUTTON, self.OnUp, id=2)
+        #self.Bind(wx.EVT_BUTTON, self.OnUp, id=2)
         self.Bind(wx.EVT_BUTTON, self.OnStart, id=3)
-        self.Bind(wx.EVT_BUTTON, self.OnLeft, id=4)
-        self.Bind(wx.EVT_BUTTON, self.OnDown, id=5)
-        self.Bind(wx.EVT_BUTTON, self.OnRight, id=6)
+        #self.Bind(wx.EVT_BUTTON, self.OnLeft, id=4)
+        #self.Bind(wx.EVT_BUTTON, self.OnDown, id=5)
+        #self.Bind(wx.EVT_BUTTON, self.OnRight, id=6)
         self.Bind(wx.EVT_BUTTON, self.OnWarp, id=7)
         self.Bind(wx.EVT_BUTTON, self.onAuto, id=8)
         self.Bind(wx.EVT_BUTTON, self.OnColor, id=9)
@@ -445,7 +445,7 @@ class Cameras(wx.Frame):
         self.state = 0 
 
     def onTask1(self,event):
-        self.state = 2
+        self.state = -2
 
     def adjustangle(self, turn):
         if turn > 180:
@@ -457,7 +457,7 @@ class Cameras(wx.Frame):
     def onNextFrame2(self, evt):
         distanceconst = 12.2
         #print "self.goal1: ", self.goal1
-        #print "self.goal2: ", self.goal2
+        #print "self.goal2: ", self.goal2    
         if self.state == -1:
             return
         if self.pause == -1:
@@ -467,6 +467,31 @@ class Cameras(wx.Frame):
                 return
             else:
                 self.sync = self.display1.sync
+
+            if self.state == -2: # this is a hack mode for task 1 & 2
+                results = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles, True, 0)
+                if results == None:
+                    angle = 0
+                    distance = 0
+                    ball_loc = (0,0)
+                else:
+                    self.next_pt = results[0]
+                    angle = results[1]
+                    distance = results[2]
+                    ball_loc = results[3]
+                    fn_angle = results[4]
+                if self.next_pt == (0,0):
+                    print "NO PATH FOUND !!!!!!!"
+                    return
+                if angle != 0:
+                    a = self.turn(angle)
+                    self.display1.bot_dir = fn_angle
+
+                a = self.move(int(distance*distanceconst))     #distanceconst is the correct value
+                self.display1.bot_loc = self.next_pt
+
+                return
+
             if self.display1.bot_found == False: # robot wasn't found move it forward a bit past the middle
                 if self.display1.bot_lost == 2:
                     self.turn(90)
@@ -489,6 +514,7 @@ class Cameras(wx.Frame):
                 return
             else:
                 self.display1.bot_lost = 0
+
             if self.state == 0: # state 0 is find and send the command to move towards the closest ball
                 print "self.display1.bot_loc: ", self.display1.bot_loc
                 results = path_tools.PathFind(self.display1.bot_dir, self.display1.bot_loc, self.display1.veriBalls, self.display1.veriObstacles)
