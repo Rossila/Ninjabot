@@ -466,6 +466,7 @@ class Cameras(wx.Frame):
                 if self.display1.bot_lost == 2:
                     self.turn(90)
                     self.move(int(50*distanceconst))
+                    self.display1.bot_lost = 1
                     return
                 print "self.display1.bot_loc: ", self.display1.bot_loc
                 print "self.display1.bot_dir: ", self.display1.bot_dir
@@ -644,6 +645,8 @@ class Cameras(wx.Frame):
     #returns two variables corresponding to the arduinos turn inputs
     #only use between 0 and 360 degrees, responds in 5 degree increments
     def convertTurn(self, angle):
+        if angle == 0:
+            return
         if (angle > 180):
             angle = 180
         self.secondAngle = int(math.floor(angle/50))
